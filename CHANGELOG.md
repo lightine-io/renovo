@@ -17,3 +17,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Installer on PackageInstaller sessions with the install permission flow per Android version, silent self-updates where Android 12 and later allow them, and the unsupported-device detection.
 - APK verification before install: SHA-256, package name, version code, and the signing certificate read from the APK signing block (v2, v3, v3.1) and compared with the installed app's, including key rotation.
 - Local HTTPS test server for the sample app: version file with ETag, APK with Range and If-Range, and a switch that cuts a download to test resume.
+- Update UI foundations in renovo-ui: theme and progress wrappers, window width classes, every screen string in English and Azerbaijani, the release notes renderer, the shared tiles and the forced-screen shape, previews, and the first Roborazzi screenshot test.
