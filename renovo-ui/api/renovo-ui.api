@@ -1,0 +1,10 @@
+public final class io/lightine/renovo/ui/RenovoColorSchemes {
+	public static final field $stable I
+	public fun <init> (Landroidx/compose/material3/ColorScheme;Landroidx/compose/material3/ColorScheme;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDark ()Landroidx/compose/material3/ColorScheme;
+	public final fun getLight ()Landroidx/compose/material3/ColorScheme;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

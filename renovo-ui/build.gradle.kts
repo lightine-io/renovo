@@ -4,8 +4,7 @@ plugins {
     // Dokka goes before maven-publish: the javadoc jar is wired while the publish plugin is applied.
     alias(libs.plugins.dokka)
     alias(libs.plugins.maven.publish)
-    // Screenshot tests will use Roborazzi (libs.plugins.roborazzi). It is not applied yet, see the
-    // note in gradle/libs.versions.toml.
+    alias(libs.plugins.roborazzi)
 }
 
 mavenPublishing {
@@ -77,7 +76,8 @@ dependencies {
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.material3)
+    // Public API: RenovoColorSchemes takes Material 3 ColorScheme values, so a host app compiles against it.
+    api(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.window)
     implementation(libs.androidx.activity.compose)
@@ -88,6 +88,12 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.compose.ui.test.junit4)
+    testImplementation(libs.androidx.test.espresso.core)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
     // Declares the activity that the Compose test rule launches. Without it Robolectric cannot find it.
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    // The @Preview functions live in src/debug, so neither tool reaches the published release library.
+    debugImplementation(libs.androidx.compose.ui.tooling)
+    debugImplementation(libs.androidx.compose.ui.tooling.preview)
 }
