@@ -54,6 +54,11 @@ android {
         unitTests {
             // Robolectric tests read the merged resources, manifest, and assets.
             isIncludeAndroidResources = true
+            // Robolectric's Android 16 and 17 runtimes reach a JDK-internal class that JDK 17 and
+            // later seal off; without this export the test JVM throws IllegalAccessException.
+            all { test ->
+                test.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
+            }
         }
     }
 
