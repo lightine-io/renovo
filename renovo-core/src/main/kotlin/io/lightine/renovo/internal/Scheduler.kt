@@ -3,16 +3,20 @@ package io.lightine.renovo.internal
 import kotlin.time.Duration
 
 /**
- * Runs checks through WorkManager.
+ * Runs checks: a periodic one through WorkManager, and an immediate one on a coroutine.
  *
- * The implementing task must guarantee:
- * - [schedulePeriodicCheck] keeps one unique periodic job with a "connected" network constraint.
- *   Calling it again with the same interval changes nothing; a new interval replaces the job.
- * - [checkNow] runs one check as unique one-time work, so overlapping requests never run two checks.
- * - A failed check is retried with exponential backoff before the engine hears `CheckFailed`.
+ * The implementation guarantees:
+ * - [schedulePeriodicCheck] keeps one unique periodic job with a "connected" network constraint and
+ *   exponential backoff from 30 seconds. Calling it again with the same interval changes nothing; a new
+ *   interval replaces the job's interval without cancelling the job.
+ * - [checkNow] does not go through WorkManager. It fetches right away in a coroutine of the runtime,
+ *   and overlapping calls share one request, so a user who taps twice sends one request.
+ * - A periodic run that fails for lack of a network is retried by WorkManager with backoff, up to
+ *   three runs per period, before the engine hears `CheckFailed`.
  * - Every check reports `CheckStarted` (with `userInitiated` false for periodic runs) and then
  *   exactly one of `CheckSucceeded`, `CheckNotModified`, or `CheckFailed`. The ETag it sends is
- *   the engine's current snapshot ETag.
+ *   the engine's current snapshot ETag. A periodic run sends `CheckStarted` together with its outcome,
+ *   after the request, so a run that is retried leaves no unanswered `CheckStarted` behind.
  */
 internal interface Scheduler {
     fun schedulePeriodicCheck(interval: Duration)
