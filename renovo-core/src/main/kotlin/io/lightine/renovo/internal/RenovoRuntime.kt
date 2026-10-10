@@ -6,6 +6,7 @@ import io.lightine.renovo.RenovoLogger
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateListener
 import io.lightine.renovo.UpdateState
+import io.lightine.renovo.internal.engine.EventSink
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -23,6 +24,12 @@ internal interface RenovoRuntime {
 
     /** The engine's state flow. */
     val state: StateFlow<UpdateState>
+
+    /**
+     * Where workers and receivers that the system creates report their events. Components built by
+     * the runtime get the sink through their constructor instead.
+     */
+    val events: EventSink
 
     /** Registers [listener]; it is called on the main thread with the current state and every change. */
     fun addListener(listener: UpdateListener)

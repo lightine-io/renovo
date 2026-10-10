@@ -16,6 +16,10 @@ internal class RuntimeHolder {
     val runtime: RenovoRuntime
         get() = current ?: UninitializedRuntime
 
+    /** The runtime, or null before [initialize] succeeded. For code the system starts without init. */
+    val runtimeOrNull: RenovoRuntime?
+        get() = current
+
     /**
      * Creates the runtime with [create] on the first call. Later calls do not call [create] and only
      * log a warning, because host apps sometimes call init from more than one place (for example an

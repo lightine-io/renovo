@@ -8,6 +8,7 @@ import io.lightine.renovo.ThemeMode
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateListener
 import io.lightine.renovo.UpdateState
+import io.lightine.renovo.internal.engine.EventSink
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
@@ -28,6 +29,7 @@ class RuntimeHolderTest {
                     ui { themeMode = ThemeMode.Dark }
                 }.build()
         override val state: StateFlow<UpdateState> = MutableStateFlow(UpdateState.Idle)
+        override val events: EventSink = EventSink { }
         var checks = 0
 
         override fun addListener(listener: UpdateListener) = Unit

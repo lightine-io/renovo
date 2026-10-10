@@ -2,6 +2,7 @@ package io.lightine.renovo
 
 import android.app.Activity
 import android.content.Context
+import io.lightine.renovo.internal.RenovoRuntime
 import io.lightine.renovo.internal.RuntimeFactory
 import io.lightine.renovo.internal.RuntimeHolder
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,11 @@ public object Renovo {
 
     // Replaced in tests of the wiring. Read only inside init.
     internal var runtimeFactory: RuntimeFactory = RuntimeFactory.Default
+
+    // Workers and receivers are created by the system, so they cannot get the runtime through a
+    // constructor. They read it here and do nothing when the host app has not called init yet.
+    internal val runtimeOrNull: RenovoRuntime?
+        get() = holder.runtimeOrNull
 
     /**
      * Starts Renovo with the settings in [configure]. Call it once, in `Application.onCreate`.

@@ -6,6 +6,7 @@ import io.lightine.renovo.RenovoLogger
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateListener
 import io.lightine.renovo.UpdateState
+import io.lightine.renovo.internal.engine.EventSink
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -23,6 +24,9 @@ internal object UninitializedRuntime : RenovoRuntime {
     override val logger: RenovoLogger? = null
 
     override val state: StateFlow<UpdateState>
+        get() = notInitialized()
+
+    override val events: EventSink
         get() = notInitialized()
 
     override fun addListener(listener: UpdateListener): Unit = notInitialized()
