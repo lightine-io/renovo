@@ -1,0 +1,55 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# IDE state is per machine. The project builds from the command line.
+.idea/
+*.iml
+*.iws
+.vscode/
+*.swp
+*.swo
+
+# Build outputs
+build/
+out/
+.gradle/
+.kotlin/
+*.class
+
+# Per-machine Android SDK location, written by Android Studio and the Android CLI.
+local.properties
+
+# Signing material never enters the repository (CLAUDE.md: no secrets, tokens, or keystores).
+*.keystore
+*.jks
+*.pem
+*.p12
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs and temporary files
+*.log
+logs/
+*.tmp
+*.temp
+.cache/
+
+# Per-machine Claude Code settings and session working notes. Anchored to the project root
+# so a nested directory with the same name is not silently excluded.
+/.claude/settings.local.json
+/.handoffs/
+/.plans/
+
+# The specification, the kickoff prompt, the design mockups, and the Claude Code rules stay on the
+# owner's machine. They steer every session but are not part of the public repository.
+/docs/
+/design/
+/PROMPT.md
+/CLAUDE.md
+/.claude/
