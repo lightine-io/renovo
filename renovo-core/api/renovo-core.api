@@ -1,0 +1,308 @@
+public final class io/lightine/renovo/DownloadProgress {
+	public fun <init> (JLjava/lang/Long;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBytesDownloaded ()J
+	public final fun getTotalBytes ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/FailureReason : java/lang/Enum {
+	public static final field Cancelled Lio/lightine/renovo/FailureReason;
+	public static final field HashMismatch Lio/lightine/renovo/FailureReason;
+	public static final field InstallRejected Lio/lightine/renovo/FailureReason;
+	public static final field Network Lio/lightine/renovo/FailureReason;
+	public static final field NotNewer Lio/lightine/renovo/FailureReason;
+	public static final field Parse Lio/lightine/renovo/FailureReason;
+	public static final field SignatureMismatch Lio/lightine/renovo/FailureReason;
+	public static final field Storage Lio/lightine/renovo/FailureReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/lightine/renovo/FailureReason;
+	public static fun values ()[Lio/lightine/renovo/FailureReason;
+}
+
+public final class io/lightine/renovo/Network : java/lang/Enum {
+	public static final field Any Lio/lightine/renovo/Network;
+	public static final field NotRoaming Lio/lightine/renovo/Network;
+	public static final field UnmeteredOnly Lio/lightine/renovo/Network;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/lightine/renovo/Network;
+	public static fun values ()[Lio/lightine/renovo/Network;
+}
+
+public final class io/lightine/renovo/ReleaseNotes {
+	public static final field Companion Lio/lightine/renovo/ReleaseNotes$Companion;
+	public fun <init> (Ljava/lang/String;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun forLanguage (Ljava/lang/String;)Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/ReleaseNotes$Companion {
+	public final fun of ([Lkotlin/Pair;)Lio/lightine/renovo/ReleaseNotes;
+}
+
+public final class io/lightine/renovo/Renovo {
+	public static final field INSTANCE Lio/lightine/renovo/Renovo;
+	public final fun addListener (Lio/lightine/renovo/UpdateListener;)V
+	public final fun checkNow ()V
+	public final fun getConfig ()Lio/lightine/renovo/RenovoConfig;
+	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun init (Landroid/content/Context;Lkotlin/jvm/functions/Function1;)V
+	public final fun installIfReady ()V
+	public final fun removeListener (Lio/lightine/renovo/UpdateListener;)V
+	public final fun requestNotificationPermission (Landroid/app/Activity;)V
+	public final fun startDownload ()V
+	public final fun submit (Lio/lightine/renovo/UpdateInfo;)V
+	public final fun useMobileDataOnce ()V
+}
+
+public final class io/lightine/renovo/RenovoConfig {
+	public final fun getAllowMobileDataOverride ()Z
+	public final fun getAutoDownload ()Z
+	public final fun getCanInstallNow ()Lkotlin/jvm/functions/Function0;
+	public final fun getCheckInterval-UwyO8pc ()J
+	public final fun getForcedDownloadNetwork ()Lio/lightine/renovo/Network;
+	public final fun getLogger ()Lio/lightine/renovo/RenovoLogger;
+	public final fun getNotifications ()Z
+	public final fun getOptionalDownloadNetwork ()Lio/lightine/renovo/Network;
+	public final fun getUi ()Lio/lightine/renovo/UiSettings;
+	public final fun getVersionHeaders ()Lkotlin/jvm/functions/Function0;
+	public final fun getVersionSource ()Lio/lightine/renovo/VersionSource;
+	public final fun getVersionUrl ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/RenovoConfig$Builder {
+	public final fun getAllowMobileDataOverride ()Z
+	public final fun getAutoDownload ()Z
+	public final fun getCanInstallNow ()Lkotlin/jvm/functions/Function0;
+	public final fun getCheckInterval-UwyO8pc ()J
+	public final fun getForcedDownloadNetwork ()Lio/lightine/renovo/Network;
+	public final fun getLogger ()Lio/lightine/renovo/RenovoLogger;
+	public final fun getNotifications ()Z
+	public final fun getOptionalDownloadNetwork ()Lio/lightine/renovo/Network;
+	public final fun getVersionHeaders ()Lkotlin/jvm/functions/Function0;
+	public final fun getVersionSource ()Lio/lightine/renovo/VersionSource;
+	public final fun getVersionUrl ()Ljava/lang/String;
+	public final fun setAllowMobileDataOverride (Z)V
+	public final fun setAutoDownload (Z)V
+	public final fun setCanInstallNow (Lkotlin/jvm/functions/Function0;)V
+	public final fun setCheckInterval-LRDsOJo (J)V
+	public final fun setForcedDownloadNetwork (Lio/lightine/renovo/Network;)V
+	public final fun setLogger (Lio/lightine/renovo/RenovoLogger;)V
+	public final fun setNotifications (Z)V
+	public final fun setOptionalDownloadNetwork (Lio/lightine/renovo/Network;)V
+	public final fun setVersionHeaders (Lkotlin/jvm/functions/Function0;)V
+	public final fun setVersionSource (Lio/lightine/renovo/VersionSource;)V
+	public final fun setVersionUrl (Ljava/lang/String;)V
+	public final fun ui (Lkotlin/jvm/functions/Function1;)V
+}
+
+public abstract interface class io/lightine/renovo/RenovoLogger {
+	public abstract fun log (Ljava/lang/String;Ljava/lang/Throwable;)V
+}
+
+public final class io/lightine/renovo/ThemeMode : java/lang/Enum {
+	public static final field Dark Lio/lightine/renovo/ThemeMode;
+	public static final field Light Lio/lightine/renovo/ThemeMode;
+	public static final field System Lio/lightine/renovo/ThemeMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/lightine/renovo/ThemeMode;
+	public static fun values ()[Lio/lightine/renovo/ThemeMode;
+}
+
+public final class io/lightine/renovo/UiSettings {
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDynamicColor ()Z
+	public final fun getThemeMode ()Lio/lightine/renovo/ThemeMode;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UiSettings$Builder {
+	public final fun getDynamicColor ()Z
+	public final fun getThemeMode ()Lio/lightine/renovo/ThemeMode;
+	public final fun setDynamicColor (Z)V
+	public final fun setThemeMode (Lio/lightine/renovo/ThemeMode;)V
+}
+
+public final class io/lightine/renovo/UpdateInfo {
+	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;ZLjava/lang/Long;Lio/lightine/renovo/ReleaseNotes;)V
+	public synthetic fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;ZLjava/lang/Long;Lio/lightine/renovo/ReleaseNotes;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApkUrl ()Ljava/lang/String;
+	public final fun getMandatory ()Z
+	public final fun getMinSupportedVersionCode ()Ljava/lang/Long;
+	public final fun getReleaseNotes ()Lio/lightine/renovo/ReleaseNotes;
+	public final fun getSha256 ()Ljava/lang/String;
+	public final fun getSize ()Ljava/lang/Long;
+	public final fun getVersionCode ()J
+	public final fun getVersionName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/lightine/renovo/UpdateListener {
+	public abstract fun onStateChanged (Lio/lightine/renovo/UpdateState;)V
+}
+
+public abstract interface class io/lightine/renovo/UpdateState {
+}
+
+public final class io/lightine/renovo/UpdateState$Available : io/lightine/renovo/UpdateState {
+	public fun <init> (Lio/lightine/renovo/UpdateInfo;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInfo ()Lio/lightine/renovo/UpdateInfo;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$Checking : io/lightine/renovo/UpdateState {
+	public static final field INSTANCE Lio/lightine/renovo/UpdateState$Checking;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$Downloading : io/lightine/renovo/UpdateState {
+	public fun <init> (Lio/lightine/renovo/UpdateInfo;Lio/lightine/renovo/DownloadProgress;Z)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInfo ()Lio/lightine/renovo/UpdateInfo;
+	public final fun getProgress ()Lio/lightine/renovo/DownloadProgress;
+	public final fun getUserInitiated ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$Failed : io/lightine/renovo/UpdateState {
+	public fun <init> (Lio/lightine/renovo/FailureReason;Lio/lightine/renovo/UpdateInfo;Z)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInfo ()Lio/lightine/renovo/UpdateInfo;
+	public final fun getReason ()Lio/lightine/renovo/FailureReason;
+	public final fun getUserInitiated ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$Idle : io/lightine/renovo/UpdateState {
+	public static final field INSTANCE Lio/lightine/renovo/UpdateState$Idle;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$Installing : io/lightine/renovo/UpdateState {
+	public fun <init> (Lio/lightine/renovo/UpdateInfo;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInfo ()Lio/lightine/renovo/UpdateInfo;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$PermissionNeeded : io/lightine/renovo/UpdateState {
+	public fun <init> (Lio/lightine/renovo/UpdateInfo;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInfo ()Lio/lightine/renovo/UpdateInfo;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$ReadyToInstall : io/lightine/renovo/UpdateState {
+	public fun <init> (Lio/lightine/renovo/UpdateInfo;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInfo ()Lio/lightine/renovo/UpdateInfo;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$Required : io/lightine/renovo/UpdateState {
+	public fun <init> (Lio/lightine/renovo/UpdateInfo;Lio/lightine/renovo/UpdateStep;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInfo ()Lio/lightine/renovo/UpdateInfo;
+	public final fun getStep ()Lio/lightine/renovo/UpdateStep;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$Unsupported : io/lightine/renovo/UpdateState {
+	public static final field INSTANCE Lio/lightine/renovo/UpdateState$Unsupported;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$UpToDate : io/lightine/renovo/UpdateState {
+	public static final field INSTANCE Lio/lightine/renovo/UpdateState$UpToDate;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateState$WaitingForNetwork : io/lightine/renovo/UpdateState {
+	public fun <init> (Lio/lightine/renovo/UpdateInfo;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInfo ()Lio/lightine/renovo/UpdateInfo;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/lightine/renovo/UpdateStep {
+}
+
+public final class io/lightine/renovo/UpdateStep$Downloading : io/lightine/renovo/UpdateStep {
+	public fun <init> (Lio/lightine/renovo/DownloadProgress;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getProgress ()Lio/lightine/renovo/DownloadProgress;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateStep$Failed : io/lightine/renovo/UpdateStep {
+	public fun <init> (Lio/lightine/renovo/FailureReason;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getReason ()Lio/lightine/renovo/FailureReason;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateStep$Installing : io/lightine/renovo/UpdateStep {
+	public static final field INSTANCE Lio/lightine/renovo/UpdateStep$Installing;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateStep$PermissionNeeded : io/lightine/renovo/UpdateStep {
+	public static final field INSTANCE Lio/lightine/renovo/UpdateStep$PermissionNeeded;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateStep$Unsupported : io/lightine/renovo/UpdateStep {
+	public static final field INSTANCE Lio/lightine/renovo/UpdateStep$Unsupported;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateStep$WaitingForNetwork : io/lightine/renovo/UpdateStep {
+	public fun <init> (Z)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCanUseMobileData ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/UpdateStep$WaitingForUser : io/lightine/renovo/UpdateStep {
+	public static final field INSTANCE Lio/lightine/renovo/UpdateStep$WaitingForUser;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/lightine/renovo/VersionSource {
+	public abstract fun latest (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
