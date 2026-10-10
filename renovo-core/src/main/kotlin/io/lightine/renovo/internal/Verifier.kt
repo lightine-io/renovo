@@ -11,7 +11,7 @@ import java.io.File
  * 1. The SHA-256 of `file` equals `info.sha256` when that is set ([FailureReason.HashMismatch]).
  * 2. The APK's package name equals the host app's ([FailureReason.SignatureMismatch]).
  * 3. The APK's version code is higher than `installedVersionCode` ([FailureReason.NotNewer]).
- * 4. The APK's signing certificates (schemes v2 and v3) match the installed app's, and the
+ * 4. The APK's signing certificates (schemes v2, v3, and v3.1) match the installed app's, and the
  *    signature over the signed data is valid ([FailureReason.SignatureMismatch]).
  *
  * A file that cannot be read is [FailureReason.Storage]; an archive that is not a valid APK is
