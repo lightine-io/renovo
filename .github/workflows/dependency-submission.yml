@@ -1,0 +1,69 @@
+# Submits the full resolved Gradle dependency graph, including transitive dependencies, to
+# GitHub's Dependency Graph. GitHub cannot resolve a Gradle project's transitive graph on its own,
+# so without this submission Dependabot alerts and the pull request gate (dependency-review.yml)
+# see only the directly declared dependencies. With it, the whole tree is checked for known
+# vulnerabilities (CVEs).
+#
+# Runs on push to main (keeps the baseline graph current) and on pull_request (so
+# dependency-review can compare the pull request's full graph - that job waits for this
+# submission via retry-on-snapshot-warnings).
+#
+# This is the "trusted pull requests" pattern from the gradle/actions docs: submit directly on
+# pull_request. Renovo's pull requests are same-repository branches, for which `contents: write`
+# is available. For a fork pull request GitHub downgrades the token to read-only, so the submit
+# step simply does nothing instead of escalating privilege. If pull requests from forks become
+# routine, switch to the fork-safe generate-and-upload plus workflow_run pattern from the same docs.
+#
+# First-party actions only (GitHub and Gradle), matching check.yml - no third-party scanner enters
+# the build.
+
+name: dependency submission
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  dependency-submission:
+    name: dependency graph
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # JDK 21 to match check.yml; the Gradle daemon itself runs on JDK 17
+      # (gradle/gradle-daemon-jvm.properties, provisioned by the foojay resolver).
+      - name: Set up JDK 21
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Resolving the graph configures the Android modules, which read compileSdk 37. Ensure the
+      # platform explicitly (with license acceptance) instead of relying on AGP's auto-download,
+      # which could hang on an unaccepted-license prompt in CI. Same approach as check.yml.
+      - name: Ensure Android SDK platform 37
+        run: |
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -d "$ANDROID_SDK_ROOT/platforms/android-37.0" ]; then
+            yes 2>/dev/null | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+            "$SDKMANAGER" --install "platforms;android-37.0"
+          fi
+
+      - name: Generate and submit dependency graph
+        uses: gradle/actions/dependency-submission@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          # Gate only what ships. Test-only dependencies (for example Robolectric and its
+          # transitives) stay out of the submitted graph, so the dependency-review gate and
+          # Dependabot never block on code that cannot reach a host app. The pattern matches the
+          # per-variant test classpaths, which are project configurations. The build-time plugin
+          # classpath is not a project configuration and is not submitted at all.
+          dependency-graph-exclude-configurations: '.*[Tt]est(Compile|Runtime)Classpath'

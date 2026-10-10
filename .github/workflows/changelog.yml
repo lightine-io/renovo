@@ -1,0 +1,42 @@
+# Enforces the CHANGELOG rule: every pull request updates CHANGELOG.md [Unreleased]. A pull
+# request that does not touch CHANGELOG.md fails this check unless it carries the `no-changelog`
+# label (the escape hatch for trivial changes - apply it WITH a one-line justification in the
+# pull request description).
+#
+# A separate workflow (not a job in check.yml) on purpose: it re-runs when a label is added or
+# removed (the `labeled` and `unlabeled` types) without re-running the build.
+#
+# Action pinned to a full commit SHA per the repository convention (see check.yml header).
+
+name: changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changelog:
+    name: changelog · entry present
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Require a CHANGELOG.md entry (or the no-changelog label)
+        run: |
+          if git diff --name-only "origin/${{ github.base_ref }}"...HEAD | grep -qx 'CHANGELOG.md'; then
+            echo "CHANGELOG.md touched - ok"
+          else
+            echo "::error::This PR does not touch CHANGELOG.md. Add an [Unreleased] entry, or apply the 'no-changelog' label with a one-line justification in the PR description."
+            exit 1
+          fi
