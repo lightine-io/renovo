@@ -29,6 +29,9 @@ internal object UninitializedRuntime : RenovoRuntime {
     override val events: EventSink
         get() = notInitialized()
 
+    override val foreground: ForegroundTracker
+        get() = notInitialized()
+
     override fun addListener(listener: UpdateListener): Unit = notInitialized()
 
     override fun removeListener(listener: UpdateListener): Unit = notInitialized()

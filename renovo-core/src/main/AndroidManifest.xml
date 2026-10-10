@@ -15,12 +15,31 @@
          its own; the host app decides when. Without this declaration the request could never be granted. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Installing an APK from outside a store needs the per-app "install unknown apps" permission
+         on Android 8 and later. The second permission lets a self-update skip the confirmation prompt
+         on Android 12 and later when the system's conditions are met; it is a normal permission. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+
     <application>
         <!-- WorkManager's own service declares no type; the merge adds dataSync for the download worker. -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
+
+        <!-- Reached only through the explicit PendingIntent Renovo gives to the system installer. -->
+        <receiver
+            android:name="io.lightine.renovo.internal.install.InstallStatusReceiver"
+            android:exported="false" />
+        <!-- MY_PACKAGE_REPLACED is sent by the system to the replaced app only. -->
+        <receiver
+            android:name="io.lightine.renovo.internal.install.PackageReplacedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
