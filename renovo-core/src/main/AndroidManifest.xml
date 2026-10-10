@@ -1,2 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Lets Renovo.requestNotificationPermission ask on Android 13 and later. Renovo never asks on
+         its own; the host app decides when. Without this declaration the request could never be granted. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+</manifest>
