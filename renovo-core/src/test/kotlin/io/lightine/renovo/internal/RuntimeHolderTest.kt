@@ -30,6 +30,13 @@ class RuntimeHolderTest {
                 }.build()
         override val state: StateFlow<UpdateState> = MutableStateFlow(UpdateState.Idle)
         override val events: EventSink = EventSink { }
+        override val foreground: ForegroundTracker =
+            object : ForegroundTracker {
+                override val isInForeground: Boolean = false
+                override val resumedActivity: Activity? = null
+
+                override fun onForeground(callback: () -> Unit) = Unit
+            }
         var checks = 0
 
         override fun addListener(listener: UpdateListener) = Unit

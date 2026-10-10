@@ -31,6 +31,12 @@ internal interface RenovoRuntime {
      */
     val events: EventSink
 
+    /**
+     * Whether the host app is in the foreground. System-created receivers read it here, for example
+     * to decide whether the install confirmation can be shown now or must wait.
+     */
+    val foreground: ForegroundTracker
+
     /** Registers [listener]; it is called on the main thread with the current state and every change. */
     fun addListener(listener: UpdateListener)
 

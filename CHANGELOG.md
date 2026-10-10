@@ -14,3 +14,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Version file parser and fetcher: HTTPS only, ETag conditional requests, host app headers, and the host app's own version source.
 - Update ready notification (English and Azerbaijani) and the foreground tracker behind it.
 - Periodic and on-demand checks through WorkManager, and the resumable APK download with network constraints, a progress notification for user-started downloads, and retries with backoff.
+- Installer on PackageInstaller sessions with the install permission flow per Android version, silent self-updates where Android 12 and later allow them, and the unsupported-device detection.

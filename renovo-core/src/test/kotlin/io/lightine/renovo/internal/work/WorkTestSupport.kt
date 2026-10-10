@@ -114,6 +114,13 @@ internal class FakeRuntime(
 ) : RenovoRuntime {
     override val config: RenovoConfig = RenovoConfig.Builder().apply { versionUrl = "https://example.com/version.json" }.build()
     override val state: StateFlow<UpdateState> = MutableStateFlow(UpdateState.Idle)
+    override val foreground: ForegroundTracker =
+        object : ForegroundTracker {
+            override val isInForeground: Boolean = false
+            override val resumedActivity: Activity? = null
+
+            override fun onForeground(callback: () -> Unit) = Unit
+        }
 
     override fun addListener(listener: UpdateListener) = Unit
 
