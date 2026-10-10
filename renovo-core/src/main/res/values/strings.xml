@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="renovo_download_channel_name">Update downloads</string>
+    <string name="renovo_download_notification_title">Downloading update</string>
+    <string name="renovo_download_notification_progress">%1$s of %2$s</string>
+</resources>
