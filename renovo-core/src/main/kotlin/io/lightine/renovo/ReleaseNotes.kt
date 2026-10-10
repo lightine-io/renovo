@@ -43,6 +43,11 @@ public class ReleaseNotes internal constructor(
             ?: byLanguage.first().second
     }
 
+    // Lets the store write the notes without a public getter. Single-language notes are one entry
+    // with an empty language code, which `of` rejects, so the two kinds cannot be confused.
+    internal val entries: List<Pair<String, String>>
+        get() = text?.let { listOf("" to it) } ?: byLanguage
+
     // Order matters for equality, because the first entry is the last fallback of forLanguage.
     override fun equals(other: Any?): Boolean = other is ReleaseNotes && other.text == text && other.byLanguage == byLanguage
 

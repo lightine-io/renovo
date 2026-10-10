@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="renovo_notification_channel_name">App updates</string>
+    <string name="renovo_notification_ready_title">Update ready</string>
+    <string name="renovo_notification_ready_text">Tap to install version %1$s.</string>
+</resources>
