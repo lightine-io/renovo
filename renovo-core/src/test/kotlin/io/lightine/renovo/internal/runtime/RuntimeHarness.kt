@@ -1,6 +1,5 @@
 package io.lightine.renovo.internal.runtime
 
-import android.app.Activity
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import io.lightine.renovo.RenovoConfig
@@ -27,7 +26,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.After
 import org.junit.runner.RunWith
-import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
@@ -92,7 +90,7 @@ internal class RuntimeHarness(
     val installer = FakeInstaller()
     val gate = FakePermissionGate()
     val notifier = FakeNotifier()
-    val foreground = FakeForeground(inForeground) { Robolectric.buildActivity(Activity::class.java).setup().get() }
+    val foreground = FakeForeground(inForeground)
 
     val components =
         Components(

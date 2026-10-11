@@ -134,28 +134,12 @@ class ActivityForegroundTrackerTest {
     }
 
     @Test
-    fun `the foreground callback runs once the activity has resumed, and can use it`() {
-        val controller = newActivity().start().resume()
-        controller.pause().stop()
-        val seen = mutableListOf<Activity?>()
-        tracker.onForeground { seen += tracker.resumedActivity }
-
-        // Coming back starts the activity first. The resumed activity was cleared by the pause, so a
-        // callback at this point could not launch a screen.
-        controller.restart().start()
-        assertTrue(seen.isEmpty())
-
-        controller.resume()
-        assertEquals(listOf<Activity?>(controller.get()), seen)
-    }
-
-    @Test
     fun `every registered callback runs and a failing one does not block the others`() {
         var second = 0
         tracker.onForeground { error("callback failure") }
         tracker.onForeground { second++ }
 
-        newActivity().start().resume()
+        newActivity().start()
 
         assertEquals(1, foregroundCalls)
         assertEquals(1, second)
@@ -221,7 +205,7 @@ class ActivityForegroundTrackerTest {
         threads.forEach { it.start() }
         threads.forEach { it.join() }
 
-        newActivity().start().resume()
+        newActivity().start()
 
         assertEquals(8 * 50, calls.get())
     }

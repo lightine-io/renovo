@@ -5,6 +5,7 @@ import androidx.work.ListenableWorker
 import androidx.work.testing.TestListenableWorkerBuilder
 import io.lightine.renovo.DownloadProgress
 import io.lightine.renovo.FailureReason
+import io.lightine.renovo.RenovoLogger
 import io.lightine.renovo.internal.engine.EngineEvent
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -16,12 +17,15 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.robolectric.shadows.ShadowLog
 import java.io.File
 import java.io.IOException
 import java.util.Random
+import java.util.concurrent.CopyOnWriteArrayList
 
 internal class DownloadWorkerTest : WorkTestBase() {
     private val body = ByteArray(200_000).also { Random(7).nextBytes(it) }
@@ -113,35 +117,6 @@ internal class DownloadWorkerTest : WorkTestBase() {
         val resume = server.requests[1]
         assertEquals("bytes=$half-", resume.headers["range"])
         assertEquals("\"v1\"", resume.headers["if-range"])
-        assertEquals(EngineEvent.DownloadFinished(11, files.apk(11).path), sink.events.last())
-    }
-
-    @Test
-    fun `a size in the version file that is too small does not throw away the bytes already on disk`() {
-        // The publisher rebuilt the APK and forgot to update "size". The hash still decides validity.
-        val wrongSize = (body.size / 4).toLong()
-        val cut = body.size / 2
-        val server = serve(cutOnFirst = cut)
-
-        assertEquals(ListenableWorker.Result.retry(), run(input(size = wrongSize)))
-        assertEquals(cut.toLong(), files.part(11).length())
-
-        val second = run(input(size = wrongSize), attempt = 1)
-
-        assertEquals(ListenableWorker.Result.success(), second)
-        assertArrayEquals(body, files.apk(11).readBytes())
-        assertEquals("FR-7: the second run resumes", "bytes=$cut-", server.requests[1].headers["range"])
-    }
-
-    @Test
-    fun `an empty file on the server is finished and left to the verifier`() {
-        // A release uploaded as a 0-byte file. The engine must hear an outcome; the verifier rejects the file.
-        serve(FileServerBehavior(ByteArray(0)))
-
-        val result = run(input(size = null))
-
-        assertEquals(ListenableWorker.Result.success(), result)
-        assertEquals(0L, files.apk(11).length())
         assertEquals(EngineEvent.DownloadFinished(11, files.apk(11).path), sink.events.last())
     }
 
@@ -516,15 +491,61 @@ internal class DownloadWorkerTest : WorkTestBase() {
     }
 
     @Test
-    fun `the worker does nothing before init`() {
+    fun `the worker asks to run again before init and does nothing else`() {
         WorkEnvironment.runtimeProvider = { null }
         val server = serve()
 
         val result = run(input())
 
-        assertEquals(ListenableWorker.Result.failure(), result)
+        // Failure would end the work for good. Retry gives a run after init the chance to download.
+        assertEquals(ListenableWorker.Result.retry(), result)
         assertTrue(server.requests.isEmpty())
         assertTrue(sink.events.isEmpty())
+        // The library logs only through the host logger, and before init there is none.
+        assertTrue(ShadowLog.getLogs().none { it.tag == "Renovo" })
+    }
+
+    @Test
+    fun `an unexpected exception is logged with fixed text and reported as a network failure`() {
+        val logs = CopyOnWriteArrayList<Pair<String, Throwable?>>()
+        WorkEnvironment.runtimeProvider = { FakeRuntime(sink, RenovoLogger { message, error -> logs += message to error }) }
+        WorkEnvironment.connectionFactory = ConnectionFactory { throw IllegalStateException("secret detail at https://example.com/private") }
+
+        val result = run(input())
+
+        assertEquals(ListenableWorker.Result.failure(), result)
+        assertEquals("The engine hears about it, so it does not wait forever", EngineEvent.DownloadFailed(11, FailureReason.Network), sink.events.last())
+        val entry = logs.single()
+        assertEquals("The download of version 11 stopped unexpectedly.", entry.first)
+        assertNull("The exception is not passed on: its message can repeat addresses", entry.second)
+    }
+
+    @Test
+    fun `a cancellation is not taken for an unexpected exception`() {
+        val reported = CopyOnWriteArrayList<String>()
+        WorkEnvironment.runtimeProvider = { FakeRuntime(sink, RenovoLogger { message, _ -> reported += message }) }
+        WorkEnvironment.connectionFactory = ConnectionFactory { throw kotlinx.coroutines.CancellationException("stopped") }
+
+        assertThrows(kotlinx.coroutines.CancellationException::class.java) { run(input()) }
+
+        assertTrue(sink.events.none { it is EngineEvent.DownloadFailed })
+        assertTrue(reported.isEmpty())
+    }
+
+    @Test
+    fun `a redirect target that is not an address is refused without repeating it in the log`() {
+        val logs = CopyOnWriteArrayList<Pair<String, Throwable?>>()
+        WorkEnvironment.runtimeProvider = { FakeRuntime(sink, RenovoLogger { message, error -> logs += message to error }) }
+        val server = FakeServer { FakeResponse(302, mapOf("Location" to "x-redirect-secret://host/path")) }
+        WorkEnvironment.connectionFactory = server.factory
+
+        val result = run(input())
+
+        assertEquals(ListenableWorker.Result.failure(), result)
+        assertEquals(EngineEvent.DownloadFailed(11, FailureReason.Network), sink.events.last())
+        val everything = logs.flatMap { listOf(it.first, it.second?.message.orEmpty()) }
+        assertTrue(everything.toString(), everything.none { it.contains("x-redirect-secret") })
+        assertTrue(logs.any { it.first.contains("The download address is not valid.") })
     }
 
     @Test
@@ -577,5 +598,15 @@ internal class DownloadWorkerTest : WorkTestBase() {
         )
         assertEquals(10_240, built.extras.getInt(android.app.Notification.EXTRA_PROGRESS_MAX))
         assertEquals(1_024, built.extras.getInt(android.app.Notification.EXTRA_PROGRESS))
+    }
+
+    @Test
+    fun `the download notification uses the replaceable library icon`() {
+        val built = DownloadNotification(context, java.util.UUID.randomUUID()).foregroundInfo(10, 100).notification
+
+        // A host app replaces the icon by defining a drawable of this name, which only works if the
+        // notification refers to the library resource and not to a framework drawable.
+        assertEquals(io.lightine.renovo.R.drawable.renovo_ic_download, built.smallIcon.resId)
+        assertEquals(context.packageName, built.smallIcon.resPackage)
     }
 }

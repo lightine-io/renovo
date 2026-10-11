@@ -68,19 +68,21 @@ internal class ApkVerifier(
             return fail(FailureReason.SignatureMismatch, "The downloaded APK is for a different app.")
         }
 
-        // 3. Newer. A version code other than the announced one means the file is not what the
-        // version file describes, which is an integrity failure, not an old version.
+        // 3. Newer than the installed app. This comes before the comparison with the announced
+        // version, so an old APK is reported as old and not as a mismatch.
         val apkVersionCode = manifest.longVersionCode
-        if (apkVersionCode != info.versionCode) {
-            return fail(
-                FailureReason.HashMismatch,
-                "The downloaded APK has version code $apkVersionCode, the version file announced ${info.versionCode}.",
-            )
-        }
         if (apkVersionCode <= installedVersionCode) {
             return fail(
                 FailureReason.NotNewer,
                 "The downloaded APK's version code $apkVersionCode is not higher than the installed $installedVersionCode.",
+            )
+        }
+        // A version code other than the announced one means the file is not what the version file
+        // describes, which is an integrity failure.
+        if (apkVersionCode != info.versionCode) {
+            return fail(
+                FailureReason.HashMismatch,
+                "The downloaded APK has version code $apkVersionCode, the version file announced ${info.versionCode}.",
             )
         }
 

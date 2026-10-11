@@ -74,8 +74,8 @@ internal class UpdateEngine(
             is EngineEvent.DownloadWaitingForNetwork -> onDownloadWaitingForNetwork(event.versionCode)
             is EngineEvent.DownloadFinished -> onDownloadFinished(event.versionCode, event.filePath)
             is EngineEvent.DownloadFailed -> onDownloadFailed(event.versionCode, event.reason)
-            is EngineEvent.VerificationPassed -> onVerificationPassed(event.versionCode)
-            is EngineEvent.VerificationFailed -> onVerificationFailed(event.versionCode, event.reason)
+            is EngineEvent.VerificationPassed -> onVerificationPassed(event.versionCode, event.filePath)
+            is EngineEvent.VerificationFailed -> onVerificationFailed(event.versionCode, event.filePath, event.reason)
             EngineEvent.PermissionNeeded -> onPermissionNeeded()
             EngineEvent.PermissionGranted -> onPermissionGranted()
             EngineEvent.InstallStarted -> onInstallStarted()
@@ -340,8 +340,11 @@ internal class UpdateEngine(
 
     // ---- Verification --------------------------------------------------------------------------
 
-    private fun onVerificationPassed(versionCode: Long) {
-        val working = verifying(versionCode) ?: return log("Ignored a stale verification result for version $versionCode.")
+    private fun onVerificationPassed(
+        versionCode: Long,
+        filePath: String,
+    ) {
+        val working = verifying(versionCode, filePath) ?: return log("Ignored a stale verification result for version $versionCode.")
         val record = snapshot.download ?: return
         val path = record.filePath ?: return
         snapshot = snapshot.copy(download = record.copy(verified = true))
@@ -353,9 +356,10 @@ internal class UpdateEngine(
 
     private fun onVerificationFailed(
         versionCode: Long,
+        filePath: String,
         reason: FailureReason,
     ) {
-        val working = verifying(versionCode) ?: return log("Ignored a stale verification result for version $versionCode.")
+        val working = verifying(versionCode, filePath) ?: return log("Ignored a stale verification result for version $versionCode.")
         val record = snapshot.download ?: return
         val path = record.filePath ?: return
         emit(Effect.DeleteFile(path))
@@ -368,12 +372,19 @@ internal class UpdateEngine(
         model = working.copy(stage = Stage.Failed(reason, downloadUserInitiated))
     }
 
-    /** The current model, if the file of [versionCode] is complete and waits for its verification. */
-    private fun verifying(versionCode: Long): Model.Working? {
+    /**
+     * The current model, if the file of [versionCode] at [filePath] is complete and waits for its
+     * verification. The path must be the recorded one: a result for a file that was deleted and
+     * downloaded again under the same version code must not mark the new file as checked.
+     */
+    private fun verifying(
+        versionCode: Long,
+        filePath: String,
+    ): Model.Working? {
         val working = model as? Model.Working ?: return null
         val record = snapshot.download ?: return null
         return working.takeIf {
-            record.filePath != null && !record.verified && record.info.versionCode == versionCode && working.info.versionCode == versionCode
+            record.filePath == filePath && !record.verified && record.info.versionCode == versionCode && working.info.versionCode == versionCode
         }
     }
 

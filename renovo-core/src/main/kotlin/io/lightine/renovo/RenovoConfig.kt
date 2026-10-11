@@ -45,6 +45,22 @@ public class RenovoConfig internal constructor(
     /** Settings for the update UI. */
     public val ui: UiSettings,
 ) {
+    /** The same settings with another logger. The runtime uses it to swap in a logger that cannot throw. */
+    internal fun withLogger(logger: RenovoLogger?): RenovoConfig = RenovoConfig(
+        versionUrl = versionUrl,
+        versionSource = versionSource,
+        versionHeaders = versionHeaders,
+        checkInterval = checkInterval,
+        autoDownload = autoDownload,
+        optionalDownloadNetwork = optionalDownloadNetwork,
+        forcedDownloadNetwork = forcedDownloadNetwork,
+        allowMobileDataOverride = allowMobileDataOverride,
+        notifications = notifications,
+        canInstallNow = canInstallNow,
+        logger = logger,
+        ui = ui,
+    )
+
     internal fun engineSettings(): EngineSettings = EngineSettings(
         autoDownload = autoDownload,
         optionalDownloadNetwork = optionalDownloadNetwork,

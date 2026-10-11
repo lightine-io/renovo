@@ -47,7 +47,7 @@ class UpdateEngineRulesTest {
         etag: String? = null,
     ) = CheckSucceeded(info, etag)
 
-    private val readyPath = listOf(found(OPTIONAL), DownloadFinished(11, PATH), VerificationPassed(11))
+    private val readyPath = listOf(found(OPTIONAL), DownloadFinished(11, PATH), VerificationPassed(11, PATH))
 
     // ---- FR-19 and AC-5: when an update is forced ----
 
@@ -101,7 +101,7 @@ class UpdateEngineRulesTest {
             UseMobileDataOnce,
             DownloadProgressed(11, DownloadProgress(600, 1000)),
             DownloadFinished(11, PATH),
-            VerificationPassed(11),
+            VerificationPassed(11, PATH),
             PermissionNeeded,
             PermissionGranted,
             InstallStarted,
@@ -238,7 +238,7 @@ class UpdateEngineRulesTest {
             listOf(Effect.Verify(PATH, OPTIONAL), Effect.ScheduleChecks, Effect.StartCheck(false)),
             second.startEffects.withoutPersist(),
         )
-        second.send(VerificationPassed(11))
+        second.send(VerificationPassed(11, PATH))
         assertEquals(UpdateState.ReadyToInstall(OPTIONAL), second.state)
     }
 
@@ -258,11 +258,34 @@ class UpdateEngineRulesTest {
     @Test
     fun `FR-12 an APK that is not newer ends in Failed(NotNewer) and is deleted`() {
         val harness = EngineHarness(AUTO)
-        val effects = harness.send(found(OPTIONAL), DownloadFinished(11, PATH), VerificationFailed(11, FailureReason.NotNewer))
+        val effects = harness.send(found(OPTIONAL), DownloadFinished(11, PATH), VerificationFailed(11, PATH, FailureReason.NotNewer))
 
         assertEquals(UpdateState.Failed(FailureReason.NotNewer, OPTIONAL, false), harness.state)
         assertTrue(Effect.DeleteFile(PATH) in effects)
         assertTrue(effects.none { it is Effect.Install })
+    }
+
+    @Test
+    fun `a verification result for another file than the recorded one is ignored and logged`() {
+        val logs = mutableListOf<String>()
+        val harness = EngineHarness(EngineSettings(logger = RenovoLogger { message, _ -> logs += message }))
+        harness.send(found(OPTIONAL), DownloadFinished(11, PATH))
+        val before = harness.state
+        val stalePath = "/data/files/renovo/11-earlier.apk"
+
+        // Same version code, other file: the late answer about a replaced download.
+        val passed = harness.send(VerificationPassed(11, stalePath))
+        val failed = harness.send(VerificationFailed(11, stalePath, FailureReason.HashMismatch))
+
+        assertEquals(emptyList<Effect>(), passed)
+        assertEquals("A late failure must not delete the file that is recorded", emptyList<Effect>(), failed)
+        assertEquals(before, harness.state)
+        assertNull("Nothing was marked verified", harness.snapshot.download?.takeIf { it.verified })
+        assertEquals(2, logs.count { it.contains("stale verification result") })
+
+        // The answer about the recorded file still counts.
+        harness.send(VerificationPassed(11, PATH))
+        assertEquals(UpdateState.ReadyToInstall(OPTIONAL), harness.state)
     }
 
     @Test
@@ -545,7 +568,7 @@ class UpdateEngineRulesTest {
     @Test
     fun `a file that failed verification is not downloaded again by later checks or a restart`() {
         val harness = EngineHarness(AUTO)
-        harness.send(found(OPTIONAL), DownloadFinished(11, PATH), VerificationFailed(11, FailureReason.HashMismatch))
+        harness.send(found(OPTIONAL), DownloadFinished(11, PATH), VerificationFailed(11, PATH, FailureReason.HashMismatch))
 
         val effects = harness.send(CheckStarted(false), found(OPTIONAL))
         assertTrue(effects.none { it is Effect.EnqueueDownload })
@@ -559,7 +582,7 @@ class UpdateEngineRulesTest {
     @Test
     fun `a fixed release with a new hash is downloaded again`() {
         val harness = EngineHarness(AUTO)
-        harness.send(found(OPTIONAL), DownloadFinished(11, PATH), VerificationFailed(11, FailureReason.HashMismatch))
+        harness.send(found(OPTIONAL), DownloadFinished(11, PATH), VerificationFailed(11, PATH, FailureReason.HashMismatch))
 
         val fixed = info(sha256 = HASH_B)
         val effects = harness.send(found(fixed))
@@ -571,7 +594,7 @@ class UpdateEngineRulesTest {
     @Test
     fun `a storage failure during verification is not remembered as a rejected file`() {
         val harness = EngineHarness(AUTO)
-        harness.send(found(OPTIONAL), DownloadFinished(11, PATH), VerificationFailed(11, FailureReason.Storage))
+        harness.send(found(OPTIONAL), DownloadFinished(11, PATH), VerificationFailed(11, PATH, FailureReason.Storage))
 
         assertNull(harness.snapshot.rejected)
     }
@@ -653,7 +676,7 @@ class UpdateEngineRulesTest {
                 DownloadProgressed(11, DownloadProgress(500, 1000)),
                 DownloadWaitingForNetwork(11),
                 DownloadFailed(11, FailureReason.Network),
-                VerificationPassed(11),
+                VerificationPassed(11, PATH),
             )
 
         assertEquals(before, harness.state)

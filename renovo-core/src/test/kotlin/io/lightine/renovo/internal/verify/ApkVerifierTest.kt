@@ -161,11 +161,26 @@ class ApkVerifierTest {
     fun `a version code other than the announced one is a hash mismatch`() {
         // The file is newer than the installed app, but it is not the version the file announced.
         assertEquals(failed(FailureReason.HashMismatch), verifyResult(fixture(GOOD_V2V3), info = info(versionCode = 3)))
-        // Also when the announced code is the lower one: the file is still not what was announced.
+    }
+
+    @Test
+    fun `newer than the installed app is checked before the announced version`() {
+        // The spec's order: "not newer" comes first. The lower APK is reported as old, whatever the
+        // version file announced, so AC-2's lower or equal version is NotNewer and never a mismatch.
         assertEquals(
-            failed(FailureReason.HashMismatch),
+            failed(FailureReason.NotNewer),
             verifyResult(fixture(LOWER_VERSION), info = info(versionCode = 2)),
         )
+        assertEquals(
+            failed(FailureReason.NotNewer),
+            verifyResult(fixture(LOWER_VERSION), info = info(versionCode = 1)),
+        )
+        // An equal version too, announced or not.
+        assertEquals(
+            failed(FailureReason.NotNewer),
+            verifyResult(fixture(GOOD_V2V3), info = info(versionCode = 3), installed = FakeInstalledApp(versionCode = 2)),
+        )
+        assertTrue(logged.last(), logged.last().contains("not higher than the installed"))
     }
 
     @Test

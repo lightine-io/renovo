@@ -1,7 +1,6 @@
 package io.lightine.renovo.internal.work
 
 import android.content.Context
-import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 
@@ -16,9 +15,9 @@ internal class CheckWorker(
     override suspend fun doWork(): Result {
         val runner = WorkEnvironment.checkRunner
         if (runner == null) {
-            // Renovo.init did not run in this process. The next period tries again.
-            Log.w(TAG, "The check worker started before Renovo.init ran, so it did nothing.")
-            return Result.success()
+            // Renovo.init did not run yet in this process, and there is no host logger to log to. A
+            // retry comes sooner than the next period, and init may have run by then.
+            return Result.retry()
         }
         // runAttemptCount starts at 0 and, for periodic work, restarts every period.
         val retry = runner.runInBackground(finalAttempt = runAttemptCount >= MAX_ATTEMPTS - 1)
@@ -26,8 +25,6 @@ internal class CheckWorker(
     }
 
     companion object {
-        private const val TAG = "Renovo"
-
         /** Runs per period before a network failure is reported. */
         const val MAX_ATTEMPTS = 3
     }

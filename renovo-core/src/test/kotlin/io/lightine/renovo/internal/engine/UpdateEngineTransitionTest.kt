@@ -83,7 +83,7 @@ class UpdateEngineTransitionTest(
         private val downloadingBackground = listOf(found(O)) // with AUTO
         private val downloadingUser = listOf(found(O), StartDownload) // with MANUAL
         private val downloaded = downloadingBackground + DownloadFinished(11, PATH)
-        private val ready = downloaded + VerificationPassed(11)
+        private val ready = downloaded + VerificationPassed(11, PATH)
         private val permissionNeeded = ready + InstallIfReady + PermissionNeeded
         private val installing = ready + InstallIfReady + InstallStarted
         private val installCancelled = installing + InstallFinished(InstallResult.Cancelled)
@@ -92,7 +92,7 @@ class UpdateEngineTransitionTest(
         private val forcedOffered = listOf(found(F)) // with MANUAL or FORCED_WIFI
         private val forcedDownloadingUser = forcedOffered + StartDownload
         private val forcedDownloadedUser = forcedDownloadingUser + DownloadFinished(11, PATH)
-        private val forcedReady = listOf(found(F), DownloadFinished(11, PATH), VerificationPassed(11)) // with AUTO
+        private val forcedReady = listOf(found(F), DownloadFinished(11, PATH), VerificationPassed(11, PATH)) // with AUTO
         private val forcedInstalling = forcedReady + InstallIfReady + InstallStarted
 
         private fun row(
@@ -314,7 +314,7 @@ class UpdateEngineTransitionTest(
                 "Downloaded + VerificationPassed -> ReadyToInstall",
                 AUTO,
                 downloaded,
-                VerificationPassed(11),
+                VerificationPassed(11, PATH),
                 UpdateState.ReadyToInstall(O),
                 Effect.ShowReadyNotification(O),
             ),
@@ -322,7 +322,7 @@ class UpdateEngineTransitionTest(
                 "Downloaded + VerificationFailed(HashMismatch) -> Failed",
                 AUTO,
                 downloaded,
-                VerificationFailed(11, FailureReason.HashMismatch),
+                VerificationFailed(11, PATH, FailureReason.HashMismatch),
                 UpdateState.Failed(FailureReason.HashMismatch, O, false),
                 Effect.DeleteFile(PATH),
             ),
@@ -330,7 +330,7 @@ class UpdateEngineTransitionTest(
                 "Downloaded + VerificationFailed(SignatureMismatch) -> Failed",
                 AUTO,
                 downloaded,
-                VerificationFailed(11, FailureReason.SignatureMismatch),
+                VerificationFailed(11, PATH, FailureReason.SignatureMismatch),
                 UpdateState.Failed(FailureReason.SignatureMismatch, O, false),
                 Effect.DeleteFile(PATH),
             ),
@@ -338,7 +338,7 @@ class UpdateEngineTransitionTest(
                 "Downloaded + VerificationFailed(NotNewer) -> Failed",
                 AUTO,
                 downloaded,
-                VerificationFailed(11, FailureReason.NotNewer),
+                VerificationFailed(11, PATH, FailureReason.NotNewer),
                 UpdateState.Failed(FailureReason.NotNewer, O, false),
                 Effect.DeleteFile(PATH),
             ),
@@ -346,7 +346,7 @@ class UpdateEngineTransitionTest(
                 "Downloaded (user) + VerificationFailed -> Failed(shown)",
                 MANUAL,
                 downloadingUser + DownloadFinished(11, PATH),
-                VerificationFailed(11, FailureReason.HashMismatch),
+                VerificationFailed(11, PATH, FailureReason.HashMismatch),
                 UpdateState.Failed(FailureReason.HashMismatch, O, true),
                 Effect.DeleteFile(PATH),
             ),
@@ -521,7 +521,7 @@ class UpdateEngineTransitionTest(
             row(
                 "Failed(HashMismatch) + StartDownload -> Downloading (user)",
                 AUTO,
-                downloaded + VerificationFailed(11, FailureReason.HashMismatch),
+                downloaded + VerificationFailed(11, PATH, FailureReason.HashMismatch),
                 StartDownload,
                 UpdateState.Downloading(O, START, userInitiated = true),
                 Effect.EnqueueDownload(O, Network.Any, true),
@@ -635,7 +635,7 @@ class UpdateEngineTransitionTest(
                 "Required(Downloading, user) + VerificationPassed -> Required(WaitingForUser), installs at once",
                 FORCED_WIFI,
                 forcedDownloadedUser,
-                VerificationPassed(11),
+                VerificationPassed(11, PATH),
                 UpdateState.Required(F, UpdateStep.WaitingForUser),
                 Effect.ShowReadyNotification(F),
                 Effect.Install(PATH, F),
@@ -644,7 +644,7 @@ class UpdateEngineTransitionTest(
                 "Required(Downloading, background) + VerificationPassed -> Required(WaitingForUser)",
                 AUTO,
                 listOf(found(F), DownloadFinished(11, PATH)),
-                VerificationPassed(11),
+                VerificationPassed(11, PATH),
                 UpdateState.Required(F, UpdateStep.WaitingForUser),
                 Effect.ShowReadyNotification(F),
             ),
@@ -652,7 +652,7 @@ class UpdateEngineTransitionTest(
                 "Required(Downloading) + VerificationFailed -> Required(Failed)",
                 FORCED_WIFI,
                 forcedDownloadedUser,
-                VerificationFailed(11, FailureReason.SignatureMismatch),
+                VerificationFailed(11, PATH, FailureReason.SignatureMismatch),
                 UpdateState.Required(F, UpdateStep.Failed(FailureReason.SignatureMismatch)),
                 Effect.DeleteFile(PATH),
             ),

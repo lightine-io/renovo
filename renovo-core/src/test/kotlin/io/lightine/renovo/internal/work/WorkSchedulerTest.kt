@@ -21,6 +21,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.robolectric.shadows.ShadowLog
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.hours
@@ -169,13 +170,15 @@ internal class WorkSchedulerTest : WorkTestBase() {
     }
 
     @Test
-    fun `the worker does nothing before init`() {
+    fun `the worker asks to run again before init and does nothing else`() {
         WorkEnvironment.checkRunner = null
 
-        assertEquals(ListenableWorker.Result.success(), runWorker(0))
+        assertEquals(ListenableWorker.Result.retry(), runWorker(0))
 
         assertTrue(sink.events.isEmpty())
         assertEquals(0, fetches.get())
+        // The library logs only through the host logger, and before init there is none.
+        assertTrue(ShadowLog.getLogs().none { it.tag == "Renovo" })
     }
 
     // ---- checkNow ------------------------------------------------------------------------------

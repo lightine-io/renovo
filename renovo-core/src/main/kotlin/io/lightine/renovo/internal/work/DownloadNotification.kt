@@ -12,7 +12,12 @@ import androidx.work.WorkManager
 import io.lightine.renovo.R
 import java.util.UUID
 
-/** The progress notification that Android requires while a download runs as a foreground service. */
+/**
+ * The progress notification that Android requires while a download runs as a foreground service.
+ *
+ * The small icon is the library drawable `renovo_ic_download`. A host app replaces it by defining a
+ * drawable with the same name.
+ */
 internal class DownloadNotification(
     private val context: Context,
     private val workId: UUID,
@@ -45,7 +50,7 @@ internal class DownloadNotification(
         val notification =
             NotificationCompat
                 .Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setSmallIcon(R.drawable.renovo_ic_download)
                 .setContentTitle(context.getString(R.string.renovo_download_notification_title))
                 .setContentText(text)
                 .setProgress(

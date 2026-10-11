@@ -109,15 +109,32 @@ internal class WorkDownloaderTest : WorkTestBase() {
 
     @Test
     fun `a finished work of the same version is replaced by a new one`() {
+        // A runtime is connected and the disk is full, so the worker fails for good and the work is finished.
+        WorkEnvironment.runtimeProvider = { FakeRuntime(sink) }
+        WorkEnvironment.freeSpace = FreeSpace { _, _ -> 0L }
         enqueue()
         val first = activeWork()
         WorkManagerTestInitHelper.getTestDriver(context)?.setAllConstraintsMet(first.id)
-        // No runtime is connected, so the worker fails at once and the work is finished.
         eventually { downloadWork().all { it.state.isFinished } }
 
         enqueue()
 
         assertNotEquals(first.id, activeWork().id)
+    }
+
+    @Test
+    fun `a work that started before init is not finished, it waits for a retry`() {
+        // No runtime is connected: Renovo.init did not run in this process yet.
+        enqueue()
+        val first = activeWork()
+        WorkManagerTestInitHelper.getTestDriver(context)?.setAllConstraintsMet(first.id)
+        Thread.sleep(300)
+
+        // The worker answered "retry", so the same work is still waiting, not failed.
+        val work = activeWork()
+        assertEquals(first.id, work.id)
+        assertEquals(WorkInfo.State.ENQUEUED, work.state)
+        assertTrue(sink.events.isEmpty())
     }
 
     @Test

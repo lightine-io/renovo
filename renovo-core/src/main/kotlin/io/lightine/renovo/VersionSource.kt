@@ -4,9 +4,8 @@ package io.lightine.renovo
  * Supplies the latest version from the host app's own API, instead of a version file.
  *
  * Renovo calls [latest] on a background thread for every check. Throw to report a failed check:
- * an [IllegalArgumentException], which [UpdateInfo] throws for a value it rejects, counts as
- * version information that could not be read; anything else counts as a network failure. A
- * background check that fails for the network is retried with increasing delays.
+ * an [java.io.IOException] counts as a network failure, anything else as version information that
+ * could not be read. The check is then retried with increasing delays.
  *
  * ```
  * Renovo.init(this) {

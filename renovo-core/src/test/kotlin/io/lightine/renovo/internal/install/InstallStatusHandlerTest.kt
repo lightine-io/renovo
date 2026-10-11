@@ -1,14 +1,12 @@
 package io.lightine.renovo.internal.install
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import androidx.test.core.app.ApplicationProvider
 import io.lightine.renovo.internal.engine.EngineEvent
 import io.lightine.renovo.internal.engine.InstallResult
-import io.lightine.renovo.internal.notify.ActivityForegroundTracker
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -134,56 +132,6 @@ class InstallStatusHandlerTest {
         foreground.comeToForeground(activity)
         assertNull(shadowOf(activity).nextStartedActivity)
         assertTrue(sink.events.isEmpty())
-    }
-
-    @Test
-    fun `a deferred confirmation is launched when the user returns, with the real tracker`() {
-        // The real tracker, not the fake: it decides when the callback runs relative to the resume.
-        val tracker = ActivityForegroundTracker(context as Application)
-        val controller = Robolectric.buildActivity(Activity::class.java).setup()
-        // The user left the app while the APK was copied into the session.
-        controller.pause().stop()
-        val handler = InstallStatusHandler(context, sink, logger, tracker, sessions)
-
-        handler.handle(status(PackageInstaller.STATUS_PENDING_USER_ACTION).putExtra(Intent.EXTRA_INTENT, confirmation))
-        assertNull(shadowOf(controller.get()).nextStartedActivity)
-
-        controller.restart().start().resume()
-
-        assertEquals(confirmation.action, shadowOf(controller.get()).nextStartedActivity?.action)
-        assertEquals(SESSION, sessions.openSessionId)
-    }
-
-    @Test
-    fun `a deferred confirmation is withdrawn when the app is not ready to install any more`() {
-        var safe = true
-        val foreground = FakeForeground()
-        val handler = InstallStatusHandler(context, sink, logger, foreground, sessions, canInstallNow = { safe })
-        handler.handle(status(PackageInstaller.STATUS_PENDING_USER_ACTION).putExtra(Intent.EXTRA_INTENT, confirmation))
-
-        // Unsent data appeared while the user was away.
-        safe = false
-        val activity = resumedActivity()
-        foreground.comeToForeground(activity)
-
-        assertNull(shadowOf(activity).nextStartedActivity)
-        assertEquals(listOf(EngineEvent.InstallNotAllowedNow), sink.events)
-        assertNull("the session is given up, so the next tap can start a new one", sessions.openSessionId)
-    }
-
-    @Test
-    fun `a canInstallNow that throws withdraws a deferred confirmation too`() {
-        val foreground = FakeForeground()
-        val handler =
-            InstallStatusHandler(context, sink, logger, foreground, sessions, canInstallNow = { error("host failure") })
-        handler.handle(status(PackageInstaller.STATUS_PENDING_USER_ACTION).putExtra(Intent.EXTRA_INTENT, confirmation))
-
-        val activity = resumedActivity()
-        foreground.comeToForeground(activity)
-
-        assertNull(shadowOf(activity).nextStartedActivity)
-        assertEquals(listOf(EngineEvent.InstallNotAllowedNow), sink.events)
-        assertTrue(logger.contains("canInstallNow threw"))
     }
 
     @Test

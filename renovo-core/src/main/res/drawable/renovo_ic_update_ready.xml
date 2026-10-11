@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols "download_done" (outlined): a check above a bar. The small icon of the "update
+     ready" notification. A host app replaces it by defining a drawable with this name. A notification
+     small icon is drawn as a mask, so only the shape matters. The group moves the 960 unit grid, whose
+     origin is at the bottom left, into view. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M200,-160 v-80 h560 v80 H200 Z M426,-320 L240,-506 l56,-56 l130,130 l258,-258 l56,56 L426,-320 Z" />
+    </group>
+</vector>

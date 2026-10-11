@@ -65,6 +65,17 @@ class ReadyNotifierTest {
     }
 
     @Test
+    fun `the small icon is the replaceable library drawable`() {
+        notifier.showReady(info)
+
+        val posted = checkNotNull(shadowOf(manager).getNotification(ReadyNotifier.NOTIFICATION_ID))
+        // A host app replaces the icon by defining a drawable of this name, which only works if the
+        // notification refers to the library resource and not to a framework drawable.
+        assertEquals(io.lightine.renovo.R.drawable.renovo_ic_update_ready, posted.smallIcon.resId)
+        assertEquals(application.packageName, posted.smallIcon.resPackage)
+    }
+
+    @Test
     fun `posts nothing when notifications are not enabled`() {
         shadowOf(manager).setNotificationsEnabled(false)
 
@@ -126,11 +137,10 @@ class ReadyNotifierTest {
     }
 
     @Test
-    fun `uses the built-in download icon and cancels itself on tap`() {
+    fun `cancels itself on tap`() {
         notifier.showReady(info)
 
         val notification = shadowOf(manager).getNotification(ReadyNotifier.NOTIFICATION_ID)
-        assertEquals(android.R.drawable.stat_sys_download_done, notification.smallIcon.resId)
         assertTrue(notification.flags and android.app.Notification.FLAG_AUTO_CANCEL != 0)
     }
 
