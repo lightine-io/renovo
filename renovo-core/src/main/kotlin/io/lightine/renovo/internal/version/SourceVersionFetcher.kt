@@ -20,13 +20,13 @@ internal class SourceVersionFetcher(
     private val source: VersionSource,
     private val logger: RenovoLogger?,
 ) : VersionFetcher {
-    // The public contract of VersionSource promises a background thread, whatever called us.
+    // The VersionSource documentation promises a background thread, whatever thread called this.
     override suspend fun fetch(etag: String?): FetchResult = withContext(Dispatchers.IO) {
         try {
             FetchResult.Found(source.latest(), null)
         } catch (e: CancellationException) {
             // First, because CancellationException is an IllegalStateException and would
-            // otherwise be swallowed by the catch-all below.
+            // otherwise be caught below and reported as a failed check.
             throw e
         } catch (e: IOException) {
             fail(FailureReason.Network, "The version source reported a network failure.", e)

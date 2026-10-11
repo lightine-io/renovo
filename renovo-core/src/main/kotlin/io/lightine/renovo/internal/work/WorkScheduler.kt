@@ -24,7 +24,7 @@ import kotlin.time.Duration
  * Building one makes it the checker of [CheckWorker] (see [WorkEnvironment.checkRunner]), because the
  * system creates that worker and it cannot get anything through a constructor.
  *
- * @param currentEtag The engine's current snapshot ETag. The wiring passes `{ engine.currentSnapshot().etag }`.
+ * @param currentEtag The engine's current snapshot ETag. The runtime passes `{ engine.currentSnapshot().etag }`.
  * @param scope Owned by the runtime. [checkNow] runs in it.
  */
 internal class WorkScheduler(
@@ -59,7 +59,8 @@ internal class WorkScheduler(
     }
 
     // The check does not go through WorkManager: a user who taps "check for updates" wants the answer
-    // now, and WorkManager may hold a job back for minutes. The coalescing lives in the runner.
+    // now, and WorkManager may hold a job back for minutes. The runner makes overlapping calls share
+    // one request.
     override fun checkNow(userInitiated: Boolean) {
         runner.checkNow(userInitiated)
     }

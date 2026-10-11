@@ -18,8 +18,8 @@ import io.lightine.renovo.internal.Notifier
 /**
  * Posts the "update ready" notification through the AndroidX helpers.
  *
- * The helpers are used because the platform has no notification builder that is free of deprecated
- * API on Android 7.x, and they hide the Android 8 channel split.
+ * The helpers are used because the platform has no notification builder without deprecated API on
+ * Android 7.x. They also handle notification channels, which exist only from Android 8.
  *
  * The small icon is the library drawable `renovo_ic_update_ready`. A host app replaces it by defining
  * a drawable with the same name.

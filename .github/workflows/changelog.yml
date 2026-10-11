@@ -1,12 +1,12 @@
-# Enforces the CHANGELOG rule: every pull request updates CHANGELOG.md [Unreleased]. A pull
-# request that does not touch CHANGELOG.md fails this check unless it carries the `no-changelog`
-# label (the escape hatch for trivial changes - apply it WITH a one-line justification in the
-# pull request description).
+# Enforces the CHANGELOG rule: every pull request updates the [Unreleased] section of
+# CHANGELOG.md. A pull request that does not touch CHANGELOG.md fails this check, unless it has
+# the `no-changelog` label. Use the label only for trivial changes, and give a one-line reason in
+# the pull request description.
 #
-# A separate workflow (not a job in check.yml) on purpose: it re-runs when a label is added or
-# removed (the `labeled` and `unlabeled` types) without re-running the build.
+# This is a separate workflow, not a job in check.yml, on purpose: it runs again when a label is
+# added or removed (the `labeled` and `unlabeled` types) without running the build again.
 #
-# Action pinned to a full commit SHA per the repository convention (see check.yml header).
+# The action is pinned to a full commit SHA, like every action here (see the top of check.yml).
 
 name: changelog
 

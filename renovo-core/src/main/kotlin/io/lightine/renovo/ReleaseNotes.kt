@@ -1,12 +1,13 @@
 package io.lightine.renovo
 
-// Internal rather than private: a private constructor called from the nested class would get a
-// public synthetic accessor, which would leak into the binary API.
+// The constructor is internal, not private. A private constructor called from the companion
+// object would make Kotlin add a hidden public method, and that method would become part of the
+// public API.
 /**
  * What is new in a version: one text for every language, or one text per language code.
  *
- * The text may use a small Markdown subset (bold, italic, bullets, links, line breaks), which
- * the update UI renders.
+ * The text may use a small part of Markdown: bold, italic, bullets, links, and line breaks. The
+ * update UI shows them formatted.
  *
  * ```
  * val single = ReleaseNotes("- Sync is **faster**")
@@ -43,8 +44,8 @@ public class ReleaseNotes internal constructor(
             ?: byLanguage.first().second
     }
 
-    // Lets the store write the notes without a public getter. Single-language notes are one entry
-    // with an empty language code, which `of` rejects, so the two kinds cannot be confused.
+    // Lets the store save the notes without a public getter. Single-language notes become one entry
+    // with an empty language code. `of` rejects an empty code, so the two kinds cannot be mixed up.
     internal val entries: List<Pair<String, String>>
         get() = text?.let { listOf("" to it) } ?: byLanguage
 

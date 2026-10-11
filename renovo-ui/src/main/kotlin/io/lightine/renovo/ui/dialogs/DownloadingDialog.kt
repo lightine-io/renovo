@@ -17,7 +17,7 @@ import io.lightine.renovo.ui.downloadSizeText
 import io.lightine.renovo.ui.percentText
 
 /**
- * The dialog of the `Downloading` state (UI specification 2.2): headline, body, the progress
+ * The dialog of the `Downloading` state: headline, body, the progress
  * indicator, the percent and the size, and "Hide".
  *
  * When `progress.totalBytes` is null the indicator is indeterminate and the percent and the size

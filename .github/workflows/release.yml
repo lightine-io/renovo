@@ -2,18 +2,18 @@
 #
 # Triggers:
 #   - push of a `v*` tag -> the real release (publishes).
-#   - workflow_dispatch  -> a dry run (resolves the publish task graph; no secrets, publishes
-#                           nothing), used to check the pipeline before a real tag.
+#   - workflow_dispatch  -> a dry run. It plans the publish tasks, needs no secrets, and publishes
+#                           nothing. Use it to check the pipeline before a real tag.
 #
 # One Linux runner does everything: the library is Android-only, so nothing needs macOS.
 #
 # Channel: Maven Central, STAGED (automaticRelease = false in the root build.gradle.kts). The
 # workflow uploads a staged deployment, and a maintainer clicks "Publish" in the Central Portal to
-# make it final. A wrong upload can be dropped and redone, because published coordinates cannot
-# be changed.
+# make it final. Published coordinates can never be changed, so staging gives a chance to drop a
+# wrong upload and redo it.
 #
-# Every action is pinned to a full commit SHA with a version comment (supply-chain hardening),
-# matching .github/workflows/check.yml.
+# Every action is pinned to a full commit SHA with a version comment, for safety, as in
+# .github/workflows/check.yml.
 
 name: release
 
@@ -36,10 +36,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Real release - only on a `v*` tag. Runs under the protected `release` environment: its
-  # required reviewer is the manual go/no-go gate, and the signing and Central Portal secrets
-  # unlock only after that approval (the environment and secrets are configured in the repository
-  # settings before the first real tag).
+  # Real release - only on a `v*` tag. Runs in the protected `release` environment. A required
+  # reviewer must approve the run by hand, and only then does the job get the signing and Central
+  # Portal secrets. The environment and the secrets are set up in the repository settings before
+  # the first real tag.
   release:
     name: release · publish
     if: github.event_name == 'push'
@@ -127,8 +127,8 @@ jobs:
             gh release create "$TAG" --title "$TAG" --notes-file release-notes.md --verify-tag
           fi
 
-  # Dry run - manual only. Validates the pipeline WITHOUT publishing: no environment, no secrets,
-  # no release. It proves that the publish task graph resolves.
+  # Dry run - started by hand only. Checks the pipeline WITHOUT publishing: no environment, no
+  # secrets, no release. It proves that Gradle can plan the publish tasks.
   dry-run:
     name: release · dry-run
     if: github.event_name == 'workflow_dispatch'

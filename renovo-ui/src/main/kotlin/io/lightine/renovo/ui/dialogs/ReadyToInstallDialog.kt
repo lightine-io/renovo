@@ -20,7 +20,7 @@ import io.lightine.renovo.ui.InnerCard
 import io.lightine.renovo.ui.R
 
 /**
- * The dialog of the `ReadyToInstall` state (UI specification 2.3): shield icon, headline, body,
+ * The dialog of the `ReadyToInstall` state: shield icon, headline, body,
  * the verified line, and "Not now" and "Install".
  *
  * ```

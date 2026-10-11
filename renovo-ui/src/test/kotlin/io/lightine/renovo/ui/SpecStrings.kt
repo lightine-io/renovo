@@ -1,8 +1,8 @@
 package io.lightine.renovo.ui
 
 /**
- * Every string of UI specification part 2, copied from docs/03-ui-spec.md by a script, keyed by the
- * resource name without the `renovo_ui_` prefix. `%s` of the spec is `%1$s`, `%2$s` here. The tests
+ * Every string of the update UI, in English and Azerbaijani, keyed by the resource name without the
+ * `renovo_ui_` prefix. This is the reviewed wording; the resources must match it word for word. `%s` of the spec is `%1$s`, `%2$s` here. The tests
  * compare the resources with these tables, so a reworded string fails a test.
  */
 internal object SpecStrings {

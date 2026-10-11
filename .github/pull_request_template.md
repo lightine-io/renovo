@@ -4,14 +4,14 @@
 
 ## Tests
 
-<!-- What was added or changed: unit, Robolectric, screenshot. Anything flaky or environment-bound. -->
+<!-- Which tests were added or changed: unit, Robolectric, screenshot. Name any test that fails at random or only passes on some machines. -->
 
 ## Changelog
 
 <!--
 Every change a host app developer could notice gets an entry under `[Unreleased]` in CHANGELOG.md.
-A trivial or infrastructure-only change carries the `no-changelog` label instead. The CI check
-"changelog · entry present" looks at the label, not at this description.
+A trivial change, or one that only touches the build or CI, gets the `no-changelog` label instead.
+The CI check "changelog · entry present" looks at the label, not at this description.
 -->
 
 - [ ] `CHANGELOG.md` updated, or the `no-changelog` label applied because: <!-- one line -->

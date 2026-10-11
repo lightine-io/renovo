@@ -20,9 +20,9 @@ import java.net.URL
  * Moves the bytes of one APK from the server into `<versionCode>.apk.part`, and turns that file into
  * `<versionCode>.apk` when it is complete.
  *
- * Plain Android-free file and HTTP code on purpose: [DownloadWorker] adds the WorkManager parts around
- * it. It resumes a partial file with `Range`, validated by `If-Range`, so bytes already on disk are
- * never fetched again and a file that changed on the server is fetched from the start.
+ * Plain file and HTTP code on purpose: [DownloadWorker] adds the WorkManager parts around it. It
+ * resumes a partial file with a `Range` request, checked with `If-Range`. Bytes already on disk are
+ * never fetched again, and a file that changed on the server is fetched from the start.
  *
  * Failures are exceptions: [StorageException] when the disk is the problem, [RejectedDownloadException]
  * when a redirect leaves https, any other [IOException] for a network problem that is worth retrying.

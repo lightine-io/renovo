@@ -1,11 +1,11 @@
 package io.lightine.renovo
 
-// Equality: see the note on UpdateState. The same rules apply here.
+// Equality follows the same rules as UpdateState. See the note there.
 /**
  * What a forced update is doing while the host app stays blocked.
  *
- * It is the `step` of [UpdateState.Required]. A headless host app reads it to build its own
- * blocking screen.
+ * It is the `step` of [UpdateState.Required]. A host app that does not use `renovo-ui` reads it
+ * to build its own blocking screen.
  *
  * ```
  * when (val step = (Renovo.state.value as? UpdateState.Required)?.step) {
@@ -27,7 +27,7 @@ public sealed interface UpdateStep {
     public data object WaitingForUser : UpdateStep
 
     /**
-     * The update file is being downloaded.
+     * The APK of the update is being downloaded.
      *
      * ```
      * if (step is UpdateStep.Downloading) bar.progress = step.progress.bytesDownloaded

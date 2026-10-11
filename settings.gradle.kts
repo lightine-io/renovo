@@ -5,9 +5,8 @@ pluginManagement {
         // The Android Gradle Plugin is published only to Google's Maven repository, not to Maven
         // Central or the Gradle Plugin Portal.
         //
-        // Content-filtered to the Android and Google coordinate groups, so Google's Maven cannot
-        // shadow any other group's artifacts (supply-chain hygiene: Maven Central stays the
-        // default for everything else).
+        // Limited to the Android and Google groups, so Google's Maven cannot serve a fake copy of
+        // any other group's artifacts. Maven Central stays the source for everything else.
         google {
             content {
                 includeGroupByRegex("com\\.android.*")

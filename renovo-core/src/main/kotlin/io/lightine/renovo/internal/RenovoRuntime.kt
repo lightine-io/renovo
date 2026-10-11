@@ -10,10 +10,10 @@ import io.lightine.renovo.internal.engine.EventSink
 import kotlinx.coroutines.flow.StateFlow
 
 /**
- * Everything behind the [io.lightine.renovo.Renovo] facade, which only forwards to this.
+ * Everything behind the [io.lightine.renovo.Renovo] object, which only passes its calls on to this.
  *
- * The implementation (wiring task) owns the engine, feeds it events, and executes its effects in
- * the order the engine returns them, one event at a time.
+ * The implementation owns the engine, feeds it events, and runs its effects in the order the
+ * engine returns them, one event at a time.
  */
 internal interface RenovoRuntime {
     /** The settings given to init. */
@@ -37,7 +37,7 @@ internal interface RenovoRuntime {
      */
     val foreground: ForegroundTracker
 
-    /** Registers [listener]; it is called on the main thread with the current state and every change. */
+    /** Registers [listener]. It is called on the main thread with the current state and after every change. */
     fun addListener(listener: UpdateListener)
 
     fun removeListener(listener: UpdateListener)

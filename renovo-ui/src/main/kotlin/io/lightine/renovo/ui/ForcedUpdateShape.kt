@@ -23,7 +23,7 @@ import kotlin.math.sqrt
  * and color, one turned by 45 degrees, with the download icon on top. [size] is the width and
  * height of the whole shape. Decorative, so screen readers skip it.
  *
- * It is drawn by hand because the design needs no Expressive API for it.
+ * It is drawn by hand. The shape is simple enough that it needs no Material 3 Expressive API.
  */
 @Composable
 internal fun ForcedUpdateShape(
@@ -56,7 +56,7 @@ internal fun ForcedUpdateShape(
     }
 }
 
-// Corner radius as a share of the side. About a third gives the soft lobes of the design mockups.
+// Corner radius as a share of the side. About a third gives the soft lobes of the design.
 private const val CORNER_RATIO = 0.3f
 
 // Extent of a square turned by 45 degrees, in sides: sqrt(2) minus the two corner cut-offs,
@@ -65,5 +65,5 @@ private val SIDE_DIVISOR = (sqrt(2.0) - 2.0 * CORNER_RATIO * (sqrt(2.0) - 1.0)).
 
 // Size of the icon box as a share of the shape. The download glyph fills only two thirds of the
 // height of its box, so at this ratio the glyph is about 28 percent of the shape tall, as in the
-// mockups. A quarter for the box drew the glyph at half the size of the mockups.
+// design. A quarter for the box drew the glyph at half the size of the design.
 private const val ICON_RATIO = 0.42f

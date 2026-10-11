@@ -9,11 +9,11 @@ import io.lightine.renovo.Renovo
 /**
  * Draws [content] and, on top of it, the update UI: the dialogs and the forced update screen.
  *
- * Call `Renovo.init` first. The update UI follows `Renovo.state` and needs no other setup. It
- * appears only in the most recently resumed activity that has a host.
+ * Call `Renovo.init` first. The update UI follows `Renovo.state` and needs no other setup. When
+ * several activities show the update UI, it appears only in the one that resumed last.
  *
  * The colors come from the surrounding `MaterialTheme` when there is one. Pass [colorSchemes] to
- * use other colors; the `ui { }` settings of `Renovo.init` then pick light or dark.
+ * use other colors. The `ui { }` settings of `Renovo.init` then pick light or dark.
  *
  * ```
  * setContent {
@@ -56,7 +56,7 @@ internal fun RenovoUpdateUi(
         colorSchemes = colorSchemes,
         inheritHostTheme = inheritHostTheme,
     ) {
-        // The engine is the state holder (technical specification section 13), so no ViewModel here.
+        // The engine already holds the update state and outlives every screen, so no ViewModel is needed.
         val state by Renovo.state.collectAsStateWithLifecycle()
         UpdateUi(
             state = state,

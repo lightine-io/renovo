@@ -2,7 +2,7 @@ package io.lightine.renovo.ui
 
 import androidx.compose.runtime.Composable
 
-/** The Azerbaijani release notes of the version file example in technical specification section 4. */
+/** Sample Azerbaijani release notes: two bullets, one with bold text. */
 internal const val AZERBAIJANI_NOTES = "- Sinxronizasiya **sürətləndirildi**\n- Xətalar aradan qaldırıldı"
 
 /** One of each supported element, then the cases that must stay as typed. */

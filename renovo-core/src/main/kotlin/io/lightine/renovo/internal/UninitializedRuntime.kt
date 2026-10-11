@@ -12,8 +12,8 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * Stands in for the runtime until [io.lightine.renovo.Renovo.init] runs.
  *
- * Every call fails loudly, because silently ignoring an action before init would hide a missing
- * init call from the host app's developer until an update never arrives.
+ * Every call throws. Ignoring a call before init would hide a missing init call from the host
+ * app's developer, who would only notice when an update never arrives.
  */
 internal object UninitializedRuntime : RenovoRuntime {
     private const val MESSAGE = "Renovo.init was not called"

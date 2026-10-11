@@ -4,17 +4,19 @@ import io.lightine.renovo.Network
 import io.lightine.renovo.UpdateInfo
 
 /**
- * Downloads the APK of one version into app-internal storage, as unique WorkManager work.
+ * Downloads the APK of one version into the app's private storage, as unique WorkManager work.
  *
- * The implementing task must guarantee:
+ * An implementation guarantees:
  * - One download at a time. [enqueue] for the version that is already queued or running continues
- *   that download (taking the new network constraint and foreground mode); it never starts a
- *   second one and never repeats bytes already on disk.
- * - Resume with `Range`, validated by `If-Range`; a changed file on the server starts over.
- * - `network` maps to WorkManager constraints. A download the user started while the app was in the
- *   foreground runs as a foreground worker of type `dataSync` with a progress notification; any other
- *   runs as a plain worker. If the system refuses the foreground service, it goes on as a plain worker.
- * - Retries with exponential backoff, then reports a final failure.
+ *   that download, with the new network constraint and foreground mode. It never starts a second
+ *   download and never fetches bytes that are already on disk again.
+ * - A stopped download resumes with a `Range` request, checked with `If-Range`. A file that
+ *   changed on the server is downloaded from the start.
+ * - `network` becomes a WorkManager constraint. A download the user started while the app was in
+ *   the foreground runs as a foreground worker of type `dataSync`, with a progress notification.
+ *   Any other download runs as a plain worker. If the system refuses the foreground service, the
+ *   download goes on as a plain worker.
+ * - It retries with a growing delay between attempts, then reports a final failure.
  * - Reports through the engine's event sink, always with `info.versionCode`:
  *   `DownloadProgressed` and `DownloadWaitingForNetwork` while it runs, then exactly one of
  *   `DownloadFinished` (path of the complete file) or `DownloadFailed` (Network after the retries;

@@ -107,7 +107,7 @@ internal fun RenovoDialog(
         onDismissRequest = onDismissRequest,
         properties =
         DialogProperties(
-            // The default width is a platform value that ignores the widths of the UI specification.
+            // The default width is a platform value that ignores the dialog widths set below.
             usePlatformDefaultWidth = false,
             dismissOnBackPress = dismissible,
             dismissOnClickOutside = dismissible,
@@ -119,10 +119,10 @@ internal fun RenovoDialog(
 }
 
 /**
- * Sets the dim behind the dialog window to the Material scrim: the `scrim` role at 32 percent
- * (UI specification part 1). DialogProperties has no stable setting for it, so the dim amount is
- * set on the window's attributes. The platform always dims with black, which is the color of the
- * baseline scrim, so only the opacity of the role can be followed.
+ * Sets the dim behind the dialog window to the Material scrim: the `scrim` role at 32 percent.
+ * DialogProperties has no stable setting for it, so the dim amount is set on the window's
+ * attributes. The platform always dims with black, which is the color of the baseline scrim, so
+ * only the opacity of the role can be followed.
  */
 @Composable
 private fun MaterialScrimDim() {

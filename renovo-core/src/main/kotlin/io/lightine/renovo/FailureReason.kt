@@ -11,16 +11,19 @@ package io.lightine.renovo
  * ```
  */
 public enum class FailureReason {
-    /** No connection, or the server could not be reached. */
+    /** No connection, the server could not be reached, or the server answered with an error. */
     Network,
 
-    /** The version information could not be read. */
+    /** The version information could not be read, or it holds a value that is not allowed. */
     Parse,
 
-    /** The downloaded file does not match the SHA-256 hash in the version information. */
+    /**
+     * The downloaded file is not the file the version information describes. Its SHA-256 hash or
+     * its version code differs, or it is not a valid APK with an intact signature.
+     */
     HashMismatch,
 
-    /** The downloaded file is from a different publisher or a different app. */
+    /** The downloaded file is for a different app, or it is signed with a different key than the installed app. */
     SignatureMismatch,
 
     /** The downloaded file is not newer than the installed version. */

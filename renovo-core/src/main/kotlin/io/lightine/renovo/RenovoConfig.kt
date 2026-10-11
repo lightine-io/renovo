@@ -6,10 +6,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
-// Internal rather than private: a private constructor called from the nested class would get a
-// public synthetic accessor, which would leak into the binary API.
+// The constructor is internal, not private. A private constructor called from the nested Builder
+// would make Kotlin add a hidden public method, and that method would become part of the public API.
 /**
- * The settings passed to [Renovo.init]. Immutable once built.
+ * The settings passed to [Renovo.init]. They cannot change after init.
+ *
+ * Read them back through [Renovo.config].
  *
  * ```
  * Renovo.init(this) {
@@ -20,32 +22,105 @@ import kotlin.time.Duration.Companion.minutes
  * ```
  */
 public class RenovoConfig internal constructor(
-    /** URL of the version file, or null when [versionSource] is used. */
+    /**
+     * URL of the version file, or null when [versionSource] is used.
+     *
+     * ```
+     * val url = Renovo.config.versionUrl
+     * ```
+     */
     public val versionUrl: String?,
-    /** The host app's own version source, or null when [versionUrl] is used. */
+    /**
+     * The host app's own version source, or null when [versionUrl] is used.
+     *
+     * ```
+     * val usesOwnSource = Renovo.config.versionSource != null
+     * ```
+     */
     public val versionSource: VersionSource?,
-    /** Extra headers for the version file request. */
+    /**
+     * Returns the extra headers for the version file request.
+     *
+     * ```
+     * val headers = Renovo.config.versionHeaders()
+     * ```
+     */
     public val versionHeaders: () -> Map<String, String>,
-    /** Time between background checks. */
+    /**
+     * Time between background checks.
+     *
+     * ```
+     * val hours = Renovo.config.checkInterval.inWholeHours
+     * ```
+     */
     public val checkInterval: Duration,
-    /** True downloads a newer version without waiting for the user. */
+    /**
+     * True when a newer version downloads without waiting for the user.
+     *
+     * ```
+     * if (!Renovo.config.autoDownload) showDownloadButton()
+     * ```
+     */
     public val autoDownload: Boolean,
-    /** Networks an optional update may download on. */
+    /**
+     * The networks an optional update may download on.
+     *
+     * ```
+     * val wifiOnly = Renovo.config.optionalDownloadNetwork == Network.UnmeteredOnly
+     * ```
+     */
     public val optionalDownloadNetwork: Network,
-    /** Networks a forced update may download on. */
+    /**
+     * The networks a forced update may download on.
+     *
+     * ```
+     * val wifiOnly = Renovo.config.forcedDownloadNetwork == Network.UnmeteredOnly
+     * ```
+     */
     public val forcedDownloadNetwork: Network,
-    /** True lets the user download a waiting forced update with mobile data. */
+    /**
+     * True when the user may download a waiting forced update with mobile data.
+     *
+     * ```
+     * val offerMobileData = Renovo.config.allowMobileDataOverride
+     * ```
+     */
     public val allowMobileDataOverride: Boolean,
-    /** True shows the "update ready" notification when notifications are already allowed. */
+    /**
+     * True when Renovo shows the "update ready" notification. It is shown only when notifications
+     * are already allowed.
+     *
+     * ```
+     * if (Renovo.config.notifications) Renovo.requestNotificationPermission(this)
+     * ```
+     */
     public val notifications: Boolean,
-    /** Asked right before every install; false postpones the install. */
+    /**
+     * Asked right before every install. False postpones the install.
+     *
+     * ```
+     * val safeNow = Renovo.config.canInstallNow()
+     * ```
+     */
     public val canInstallNow: () -> Boolean,
-    /** Receives diagnostic messages, or null for no logging. */
+    /**
+     * Receives diagnostic messages, or null when logging is off.
+     *
+     * ```
+     * val loggingOn = Renovo.config.logger != null
+     * ```
+     */
     public val logger: RenovoLogger?,
-    /** Settings for the update UI. */
+    /**
+     * Settings for the update UI.
+     *
+     * ```
+     * val dark = Renovo.config.ui.themeMode == ThemeMode.Dark
+     * ```
+     */
     public val ui: UiSettings,
 ) {
-    /** The same settings with another logger. The runtime uses it to swap in a logger that cannot throw. */
+    /** The same settings with another logger. The runtime uses it to put in a logger that never throws. */
     internal fun withLogger(logger: RenovoLogger?): RenovoConfig = RenovoConfig(
         versionUrl = versionUrl,
         versionSource = versionSource,
@@ -101,7 +176,8 @@ public class RenovoConfig internal constructor(
         public var versionSource: VersionSource? = null
 
         /**
-         * Extra headers for the version file request, read before every request. Default: none.
+         * Extra headers for the version file request. Renovo calls this before every request, so a
+         * refreshed token is always used. Default: no extra headers.
          *
          * ```
          * versionHeaders = { mapOf("Authorization" to "Bearer ${tokens.current()}") }
@@ -120,7 +196,7 @@ public class RenovoConfig internal constructor(
 
         /**
          * Downloads a newer version without waiting for the user. Default true.
-         * When false, the download starts only after [Renovo.startDownload].
+         * When false, the download starts only when you call [Renovo.startDownload].
          *
          * ```
          * autoDownload = false
@@ -129,7 +205,7 @@ public class RenovoConfig internal constructor(
         public var autoDownload: Boolean = true
 
         /**
-         * Networks an optional update may download on. Default [Network.Any].
+         * The networks an optional update may download on. Default [Network.Any].
          *
          * ```
          * optionalDownloadNetwork = Network.UnmeteredOnly
@@ -138,7 +214,7 @@ public class RenovoConfig internal constructor(
         public var optionalDownloadNetwork: Network = Network.Any
 
         /**
-         * Networks a forced update may download on. Default [Network.Any].
+         * The networks a forced update may download on. Default [Network.Any].
          *
          * ```
          * forcedDownloadNetwork = Network.NotRoaming
@@ -148,7 +224,7 @@ public class RenovoConfig internal constructor(
 
         /**
          * Lets the user download a forced update with mobile data while it waits for an allowed
-         * network. Default true.
+         * network. It only matters when [forcedDownloadNetwork] is not [Network.Any]. Default true.
          *
          * ```
          * allowMobileDataOverride = false
@@ -169,7 +245,8 @@ public class RenovoConfig internal constructor(
 
         /**
          * Asked on the main thread right before every install. Return false while installing
-         * would lose work, for example while unsent data exists. Default: always true.
+         * would lose work, for example while unsent data exists. The install then waits.
+         * Default: always true.
          *
          * ```
          * canInstallNow = { !repository.hasUnsentData() }
@@ -202,7 +279,7 @@ public class RenovoConfig internal constructor(
             uiBuilder.configure()
         }
 
-        // Internal so that the only way to get a configuration is through Renovo.init.
+        // Internal, so the only way to build settings is through Renovo.init.
         internal fun build(): RenovoConfig {
             val url = versionUrl
             val source = versionSource

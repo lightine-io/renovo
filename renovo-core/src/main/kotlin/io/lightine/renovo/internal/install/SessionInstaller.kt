@@ -72,7 +72,7 @@ internal class SessionInstaller(
             try {
                 installer.createSession(sessionParams(context.packageName, length))
             } catch (e: SecurityException) {
-                // The reference names restricted users as one case: installs are not possible here.
+                // The Android documentation names restricted users as one case: installs are not possible here.
                 failBeforeSession(InstallResult.Blocked, "The system does not allow installer sessions here.", e)
                 return
             } catch (e: IOException) {
@@ -159,10 +159,10 @@ internal class SessionInstaller(
     }
 }
 
-private fun newStagingExecutor(): Executor = // One thread at most, and none while idle, so an app that never updates keeps no thread.
-    ThreadPoolExecutor(0, 1, 30, TimeUnit.SECONDS, LinkedBlockingQueue()) { runnable ->
-        Thread(runnable, "renovo-install")
-    }
+// One thread at most, and none while idle, so an app that never updates keeps no thread.
+private fun newStagingExecutor(): Executor = ThreadPoolExecutor(0, 1, 30, TimeUnit.SECONDS, LinkedBlockingQueue()) { runnable ->
+    Thread(runnable, "renovo-install")
+}
 
 /** The settings of an installer session for [packageName]. Internal so tests can read them. */
 internal fun sessionParams(
@@ -187,7 +187,7 @@ private fun requestNoUserAction(params: PackageInstaller.SessionParams) {
     params.setInstallScenario(PackageManager.INSTALL_SCENARIO_FAST)
 }
 
-// The reference asks installers to say OTHER when no store or download source fits.
+// The Android documentation asks installers to say OTHER when no store or download source fits.
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 private fun markSourceOther(params: PackageInstaller.SessionParams) {
     params.setPackageSource(PackageInstaller.PACKAGE_SOURCE_OTHER)

@@ -5,10 +5,10 @@ import android.app.Activity
 /**
  * Knows whether one of the host app's activities is in the foreground.
  *
- * The implementing task must guarantee:
+ * An implementation guarantees:
  * - Tracking through `Application.ActivityLifecycleCallbacks`, registered once at init.
- * - [resumedActivity] is the most recently resumed activity that is still resumed, held weakly so
- *   no activity leaks.
+ * - [resumedActivity] is the most recently resumed activity that is still resumed. It is held
+ *   through a weak reference, so no activity stays in memory because of it.
  * - The callback given to [onForeground] runs on the main thread every time the app comes to the
  *   foreground, so the runtime can re-check the install permission when the user returns from
  *   the settings screen. It runs once the first activity has resumed, so [resumedActivity] is set

@@ -4,10 +4,11 @@ import io.lightine.renovo.UpdateInfo
 import java.io.File
 
 /**
- * Hands a verified APK to the system installer. One implementation per API range (24-25, 26-30,
- * 31-33, 34 and up), chosen once at wiring time.
+ * Hands a verified APK to the system installer. One implementation,
+ * [io.lightine.renovo.internal.install.SessionInstaller], covers every API level and branches by
+ * level inside.
  *
- * The implementing task must guarantee:
+ * An implementation guarantees:
  * - [install] is only called from the foreground, after `canInstallNow` returned true and the
  *   [PermissionGate] reported the permission granted. A call while a session is open does nothing.
  * - It uses a `PackageInstaller` session, requests "user action not required" where the API allows

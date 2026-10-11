@@ -23,15 +23,15 @@ internal enum class Dismissal {
 }
 
 /**
- * The dismissals that last until the next app start (UI specification 2.1, 2.3, and 2.4), and
- * "Hide" and "Close", which last for their download or failure (2.2 and 2.6).
+ * The dismissals that last until the next app start ("Later", "Not now", and "Cancel"), and
+ * "Hide" and "Close", which last for their download or failure.
  *
  * The update state is process-wide, so a dismissal has to be too: when the user leaves the app and
  * comes back, or opens a second activity, the dialog they put off must stay away. The holder lives
  * in the process, so a new process starts empty, which is exactly "until the next app start".
  *
  * It keeps the version code with each choice. A newer version is a new question, so it shows again.
- * The entries are snapshot state, so a composition that reads them redraws when another window
+ * The entries are Compose state, so a composition that reads them redraws when another window
  * adds one.
  *
  * ```

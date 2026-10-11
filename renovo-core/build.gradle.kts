@@ -31,8 +31,8 @@ android {
     namespace = "io.lightine.renovo"
     compileSdk = 37
 
-    // Bytecode level of the published classes. AGP's default is still Java 8; 17 matches the
-    // toolchain the host apps of 2026 build with and avoids javac's "obsolete" warnings.
+    // Bytecode level of the published classes. AGP's default is still Java 8. Java 17 matches what
+    // host apps build with today and avoids javac's "obsolete" warnings.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -51,8 +51,8 @@ android {
         unitTests {
             // Robolectric tests read the merged resources, manifest, and assets.
             isIncludeAndroidResources = true
-            // Robolectric's Android 16 and 17 runtimes reach a JDK-internal class that JDK 17 and
-            // later seal off; without this export the test JVM throws IllegalAccessException.
+            // Robolectric's Android 16 and 17 runtimes use a class inside the JDK that JDK 17 and
+            // later lock away. Without this export the test JVM throws IllegalAccessException.
             all { test ->
                 test.jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
             }

@@ -12,15 +12,15 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.lang.ref.WeakReference
 
 /**
- * The hosts that are resumed right now, in the order they resumed (technical specification, several
- * windows). The update state is process-wide, so every attached activity could draw the same
- * dialog. Only the host that resumed last draws it.
+ * The hosts that are resumed right now, in the order they resumed. A host is an activity that
+ * shows the update UI. The update state is process-wide, so every such activity could draw the
+ * same dialog. Only the host that resumed last draws it.
  *
  * A host is keyed by its [LifecycleOwner], which is the activity. The keys are held weakly: an
  * activity that is destroyed without a pause, which the system can do, must not stay in memory
  * because of this list.
  *
- * Call it from the main thread only. The list is snapshot state, so a composition that asks
+ * Call it from the main thread only. The list is Compose state, so a composition that asks
  * [isActive] redraws when another host takes over.
  *
  * ```

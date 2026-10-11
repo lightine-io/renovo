@@ -8,18 +8,20 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import io.lightine.renovo.Renovo
 
 /**
- * Adds the update UI to [activity], for a host app that does not use Compose: the dialogs and the
+ * Adds the update UI to [activity], for a host app that does not use Compose. The dialogs and the
  * forced update screen are drawn over the activity's own views.
  *
- * Call it once in `onCreate`, after `setContentView`, and again each time the activity is created,
- * so the screens come back after a rotation. A second call for the same activity does nothing. The
- * update UI appears only in the most recently resumed activity that called this.
+ * Call it in `onCreate`, after `setContentView`. The activity is created again after a rotation,
+ * and the call there brings the screens back. A second call for the same activity instance does
+ * nothing. The update UI appears only in the most recently resumed activity that called this.
  *
  * Every `AppCompatActivity` is a `ComponentActivity`. A plain `Activity` is not supported, because
  * Compose needs the lifecycle owners that `ComponentActivity` provides.
  *
- * There is no Compose theme to inherit, so the colors come from `ui { }` in `Renovo.init`, then
- * [colorSchemes], then dynamic color on Android 12 and later, then the Material 3 baseline.
+ * There is no Compose theme to take colors from. The colors come from [colorSchemes] when you pass
+ * it. Without it they come from the wallpaper on Android 12 and later (dynamic color), and else
+ * from the Material 3 baseline scheme. The `ui { }` settings of `Renovo.init` choose light or dark
+ * and can turn dynamic color off.
  *
  * ```
  * class MainActivity : AppCompatActivity() {

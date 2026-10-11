@@ -9,7 +9,7 @@ import io.lightine.renovo.ui.PermissionSwitchIllustration
 import io.lightine.renovo.ui.R
 
 /**
- * The dialog of the `PermissionNeeded` state (UI specification 2.4): headline, body, three numbered
+ * The dialog of the `PermissionNeeded` state: headline, body, three numbered
  * steps, a picture of the system switch, and "Cancel" and "Open settings".
  *
  * The switch is a picture. It cannot be tapped, it takes no focus, and screen readers skip it.

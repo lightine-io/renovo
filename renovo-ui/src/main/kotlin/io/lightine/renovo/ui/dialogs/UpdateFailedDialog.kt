@@ -19,7 +19,7 @@ import io.lightine.renovo.ui.R
 import io.lightine.renovo.ui.reasonRes
 
 /**
- * The dialog of the `Failed` state after something the user started (UI specification 2.6): error
+ * The dialog of the `Failed` state after something the user started: error
  * icon, headline, a body, the reason, and "Close" and "Try again".
  *
  * The body is the safety-check text for [FailureReason.HashMismatch], [FailureReason.SignatureMismatch],

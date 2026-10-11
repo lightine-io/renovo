@@ -20,11 +20,12 @@ import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
 
 /**
- * Fetches the version file over HTTPS with a conditional GET.
+ * Fetches the version file over HTTPS. When an ETag is known, the request asks the server to
+ * answer 304 Not Modified if the file has not changed, so an unchanged file is not sent again.
  *
- * Redirects are followed here and not by [HttpURLConnection]: the platform follows up to five and
- * silently stops at a change of protocol, but it cannot be told to refuse a downgrade, to stop the
- * host app's headers at a foreign host, or to report either one.
+ * Redirects are followed here and not by [HttpURLConnection]. The platform follows up to five and
+ * silently stops when the protocol changes. It cannot be told to refuse a switch away from https,
+ * to keep the host app's headers from reaching another host, or to report either case.
  */
 internal class HttpVersionFetcher(
     private val url: String,
