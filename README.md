@@ -46,7 +46,7 @@ Renovo is on Maven Central. Add `renovo-ui` to your app module. It brings `renov
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.lightine.renovo:renovo-ui:0.1.0")
+    implementation("io.lightine.renovo:renovo-ui:1.0.0")
 }
 ```
 
@@ -190,7 +190,7 @@ Renovo is on Maven Central. Add `renovo-ui` to your app module. It brings `renov
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.lightine.renovo:renovo-ui:0.1.0")
+    implementation("io.lightine.renovo:renovo-ui:1.0.0")
 }
 ```
 
@@ -330,7 +330,7 @@ Renovo is on Maven Central. Add `renovo-core` to your app module:
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("io.lightine.renovo:renovo-core:0.1.0")
+    implementation("io.lightine.renovo:renovo-core:1.0.0")
 
     // Compose apps only: for collectAsStateWithLifecycle in Step 3. Skip it if your app has it.
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
