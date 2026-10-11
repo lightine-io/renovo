@@ -328,6 +328,29 @@ internal class DefaultRuntimeFlowTest : RuntimeTestBase() {
     }
 
     @Test
+    fun `a permission tap after the user left is dropped, not taken for an unsupported device`() {
+        val h = harness()
+        h.gate.status = InstallPermission.NeedsUser
+        // The real gate answers false when no activity is resumed.
+        h.gate.openResult = false
+        h.startWithUpdate()
+        h.finishDownload()
+        h.runtime.installIfReady()
+        h.settle()
+        assertTrue(h.state is UpdateState.PermissionNeeded)
+
+        // The user taps and leaves before the main thread gets to the settings screen.
+        h.runtime.installIfReady()
+        h.foreground.goToBackground()
+        h.settle()
+
+        assertTrue(h.state is UpdateState.PermissionNeeded)
+        assertEquals(0, h.gate.opens)
+        assertNull(PreferencesStore(context, null).load()?.unsupportedAtVersionCode)
+        assertTrue("the verified file is kept", h.downloadDirectory.resolve("11.apk").exists())
+    }
+
+    @Test
     fun `a settings screen that does not exist is reported as unsupported`() {
         val h = harness()
         h.gate.status = InstallPermission.NeedsUser

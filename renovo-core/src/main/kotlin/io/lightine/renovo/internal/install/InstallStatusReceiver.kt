@@ -35,17 +35,24 @@ internal class InstallStatusReceiver : BroadcastReceiver() {
             logger = runtime.logger,
             foreground = runtime.foreground,
             sessions = InstallSessions.shared,
+            canInstallNow = runtime.config.canInstallNow,
         ).handle(intent)
     }
 }
 
-/** Maps one session status to engine events. Kept apart from the receiver so tests can build it. */
+/**
+ * Maps one session status to engine events. Kept apart from the receiver so tests can build it.
+ *
+ * @param canInstallNow The host app's setting. Asked again before a confirmation that waited for
+ *   the user to come back is shown.
+ */
 internal class InstallStatusHandler(
     private val context: Context,
     private val events: EventSink,
     private val logger: RenovoLogger?,
     private val foreground: ForegroundTracker,
     private val sessions: InstallSessions,
+    private val canInstallNow: () -> Boolean = { true },
 ) {
     fun handle(intent: Intent) {
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, NO_VALUE)
@@ -111,7 +118,23 @@ internal class InstallStatusHandler(
 
     private fun launchDeferred(confirmation: Intent) {
         val sessionId = sessions.openSessionId ?: return
+        // The host app said "safe" when the user tapped install, which can be hours ago. Its answer
+        // may have changed since, and a confirmed install starts at once.
+        if (!installAllowedNow()) {
+            logger?.log("The app is not ready to install now. The waiting install confirmation was withdrawn.", null)
+            abandonQuietly(context, sessionId)
+            if (sessions.finish(sessionId)) events.send(EngineEvent.InstallNotAllowedNow)
+            return
+        }
         if (!launch(sessionId, confirmation)) sessions.deferConfirmation(confirmation)
+    }
+
+    // Host code. An exception counts as "not now", the safe answer, as before every install.
+    private fun installAllowedNow(): Boolean = try {
+        canInstallNow()
+    } catch (e: Exception) {
+        logger?.log("canInstallNow threw an exception. The install is postponed.", e)
+        false
     }
 
     /** Returns false when no activity is resumed, so the caller can keep the confirmation. */

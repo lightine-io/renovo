@@ -352,6 +352,13 @@ internal class DefaultRuntime(
     }
 
     private fun openInstallPermission() {
+        // The gate also answers false when no activity is resumed, for example when the user left
+        // right after the tap. That says nothing about the device, and "unsupported" would stop
+        // updates until the next app version, so the tap is dropped and the next one tries again.
+        if (components.foreground.resumedActivity == null) {
+            log("No activity is resumed, so the install permission screen was not opened.", null)
+            return
+        }
         val opened =
             try {
                 components.permissionGate.openSettings()

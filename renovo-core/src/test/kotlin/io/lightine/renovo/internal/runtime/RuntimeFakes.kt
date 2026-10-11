@@ -222,10 +222,13 @@ internal class FakeNotifier : Notifier {
     }
 }
 
+/** @param newActivity Makes the activity that is resumed while the app is in the foreground. */
 internal class FakeForeground(
     @Volatile override var isInForeground: Boolean = true,
+    private val newActivity: () -> Activity?,
 ) : ForegroundTracker {
-    override val resumedActivity: Activity? = null
+    @Volatile
+    override var resumedActivity: Activity? = if (isInForeground) newActivity() else null
     private val callbacks = CopyOnWriteArrayList<() -> Unit>()
 
     val callbackCount: Int
@@ -235,10 +238,17 @@ internal class FakeForeground(
         callbacks += callback
     }
 
-    /** What the real tracker does when the user brings the app back. */
+    /** What the real tracker does when the user brings the app back: an activity resumes, then the callbacks run. */
     fun comeToForeground() {
         isInForeground = true
+        if (resumedActivity == null) resumedActivity = newActivity()
         callbacks.forEach { it() }
+    }
+
+    /** What the real tracker sees when the user leaves the app. */
+    fun goToBackground() {
+        isInForeground = false
+        resumedActivity = null
     }
 }
 
