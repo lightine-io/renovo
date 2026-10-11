@@ -109,8 +109,8 @@ internal class InstallStatusHandler(
             finish(sessionId, InstallResult.Rejected)
             return
         }
-        // The reference asks to launch the confirmation only while the user is in the app. From
-        // the background the launch would also be blocked by the background activity rules.
+        // The Android documentation asks to show the confirmation only while the user is in the
+        // app. From the background, Android's limits on starting activities would block it anyway.
         if (foreground.isInForeground && launch(sessionId, confirmation)) return
         logger?.log("No activity of the app is resumed. The install confirmation waits for the next resume.", null)
         sessions.deferConfirmation(confirmation)

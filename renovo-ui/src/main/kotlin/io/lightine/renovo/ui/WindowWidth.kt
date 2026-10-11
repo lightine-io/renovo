@@ -5,8 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.window.core.layout.WindowSizeClass
 
 /**
- * The width classes the update UI lays out for, as in the UI specification. Decided by window
- * width alone, never by device type.
+ * The window widths the update UI has a layout for. Only the window width decides, never the
+ * device type.
  */
 internal enum class WindowWidth {
     /** Narrower than 600 dp: phones, folded devices, narrow windows. */

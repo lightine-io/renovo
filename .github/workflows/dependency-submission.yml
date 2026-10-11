@@ -1,12 +1,12 @@
-# Submits the full resolved Gradle dependency graph, including transitive dependencies, to
-# GitHub's Dependency Graph. GitHub cannot resolve a Gradle project's transitive graph on its own,
-# so without this submission Dependabot alerts and the pull request gate (dependency-review.yml)
-# see only the directly declared dependencies. With it, the whole tree is checked for known
-# vulnerabilities (CVEs).
+# Sends GitHub's Dependency Graph the full list of Gradle dependencies, including the dependencies
+# of dependencies. GitHub cannot work out that full list for a Gradle project on its own, so
+# without this step Dependabot alerts see only the dependencies the build files name directly.
+# With it, the whole tree is checked for known vulnerabilities (CVEs).
 #
-# Runs on push to main only. GitHub takes longer than ten minutes to make a pull request's
-# snapshot visible to the review API, so a per-PR review compared nothing; vulnerabilities are
-# caught after merge by Dependabot and before a release by the release gate (see SECURITY.md).
+# Runs on push to main only. GitHub takes longer than ten minutes to show a pull request's
+# dependencies to the review API, so a review on each pull request compared nothing. Dependabot
+# catches vulnerabilities after a merge, and the review before each release catches them before
+# they ship (see SECURITY.md).
 
 name: dependency submission
 
@@ -51,9 +51,9 @@ jobs:
       - name: Generate and submit dependency graph
         uses: gradle/actions/dependency-submission@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
-          # Gate only what ships. Test-only dependencies (for example Robolectric and its
-          # transitives) stay out of the submitted graph, so the dependency-review gate and
-          # Dependabot never block on code that cannot reach a host app. The pattern matches the
-          # per-variant test classpaths, which are project configurations. The build-time plugin
-          # classpath is not a project configuration and is not submitted at all.
+          # Check only what ships. Test-only dependencies, for example Robolectric and everything
+          # it pulls in, stay out of the submitted list, so Dependabot never raises alerts for code
+          # that cannot reach a host app. The pattern matches the test classpath of each build
+          # variant, which are project configurations. The classpath of the Gradle plugins is not
+          # a project configuration and is not submitted at all.
           dependency-graph-exclude-configurations: '.*[Tt]est(Compile|Runtime)Classpath'

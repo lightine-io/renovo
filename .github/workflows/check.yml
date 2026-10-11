@@ -1,17 +1,18 @@
 # Continuous integration: builds and tests Renovo on every pull request, on every push to main,
-# and once a week. It exists so the branch-protection rule "Require status checks to pass before
-# merging" has something meaningful to wait on. The job names below are the required status
-# check names - renaming a job here means updating the branch-protection rule too.
+# and once a week. The branch protection rule "Require status checks to pass before merging"
+# waits for these jobs. The job names below are the names of those required checks, so renaming a
+# job here means updating the branch protection rule too.
 #
 # Scope:
 # - One Linux runner is enough: the library is Android-only and needs no emulator. Unit tests run
-#   on the JVM (Robolectric where Android classes are needed). Instrumented tests run locally.
+#   on the JVM, with Robolectric where Android classes are needed. Tests that need a device run
+#   on a developer's machine.
 # - JDK 21 matches each module's jvmToolchain(21). The Gradle daemon itself runs on JDK 17
-#   (gradle/gradle-daemon-jvm.properties, provisioned by the foojay resolver).
+#   (gradle/gradle-daemon-jvm.properties). The foojay resolver downloads that JDK when needed.
 # - Gradle comes from the project's wrapper.
-# - Every action is pinned to a full commit SHA with a trailing `# vX.Y.Z` version comment
-#   (supply-chain hardening: a mutable tag like `@v6` can be repointed). Dependabot's
-#   github-actions updates bump both the SHA and the comment. Pin new actions the same way.
+# - Every action is pinned to a full commit SHA with a `# vX.Y.Z` version comment after it. This
+#   is for safety: a tag such as `@v6` can be moved to other code, a commit SHA cannot. Dependabot's
+#   GitHub Actions updates change both the SHA and the comment. Pin new actions the same way.
 
 name: check
 
@@ -19,9 +20,9 @@ on:
   pull_request:
   push:
     branches: [main]
-  # Weekly run (Monday 06:00 UTC): catches toolchain and dependency rot between pull requests -
-  # a removed action, a broken SDK download, a stale cache - on a repository that can sit quiet
-  # for days. workflow_dispatch allows an on-demand run.
+  # Weekly run (Monday 06:00 UTC). It catches things that break while no pull request runs, such
+  # as a removed action, a broken SDK download, or a stale cache. workflow_dispatch allows a run
+  # by hand.
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:
@@ -78,13 +79,13 @@ jobs:
       - name: Build, run unit tests, lint, and check the public API
         run: ./gradlew build
 
-  # Release guard. The publish task graph and the POM, sources, and javadoc jars are only built by
-  # a real publish, and nothing else before a tag runs them. The release dry-run only resolves the
-  # task graph, so a broken artifact (for example a failing Dokka run) would surface mid-release,
-  # after the environment approval. This job runs a real local publish on every pull request and
-  # push to main. It needs no secrets: publishToMavenLocal talks to no remote repository, and
-  # -Prenovo.skipSigning=true (the escape hatch in the root build.gradle.kts) skips PGP signing,
-  # which a runner without a key cannot do.
+  # Release guard. Only a real publish builds the publish tasks and the POM, sources, and javadoc
+  # jars, and nothing else runs them before a tag. The release dry run only plans the tasks. So a
+  # broken artifact, for example a failing Dokka run, would show up in the middle of a release,
+  # after the release was approved. This job runs a real local publish on every pull request and
+  # every push to main. It needs no secrets: publishToMavenLocal talks to no remote repository, and
+  # -Prenovo.skipSigning=true (defined in the root build.gradle.kts) skips PGP signing, which a
+  # runner without a key cannot do.
   publish-smoke:
     name: publish · smoke
     runs-on: ubuntu-latest

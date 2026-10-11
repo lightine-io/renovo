@@ -1,15 +1,15 @@
 package io.lightine.renovo
 
-// Equality: states without data are data objects. States with data are plain classes with
-// hand-written equals, hashCode, and toString instead of data classes, because a data class puts
-// copy() and componentN() into the public binary API, and adding a property later would break
-// every host app compiled against them. Value equality keeps StateFlow from emitting a state equal
-// to the current one, and lets tests compare states directly.
+// States without data are data objects. States with data are plain classes with hand-written
+// equals, hashCode, and toString, not data classes. A data class adds copy() and componentN() to
+// the public API, and adding a property later would then break every host app compiled against
+// them. Comparing by value keeps StateFlow from sending a state equal to the current one, and lets
+// tests compare states directly.
 /**
  * Where the update stands. [Renovo.state] always holds one of these.
  *
- * A forced update (one the user cannot postpone) is always [Required], whatever it is doing; its
- * [UpdateStep] says what. The other states describe an optional update.
+ * A forced update is an update the user cannot postpone. It is always [Required], whatever it is
+ * doing, and its [UpdateStep] says what. The other states describe an optional update.
  *
  * ```
  * Renovo.state.collect { state ->
@@ -24,7 +24,8 @@ package io.lightine.renovo
  */
 public sealed interface UpdateState {
     /**
-     * Nothing is known yet: no check has finished since the app started.
+     * Nothing is known yet. No check has succeeded since the app started, and no version was
+     * stored from an earlier run.
      *
      * ```
      * if (Renovo.state.value == UpdateState.Idle) Renovo.checkNow()
@@ -69,7 +70,7 @@ public sealed interface UpdateState {
     }
 
     /**
-     * The update file is being downloaded.
+     * The APK of the update is being downloaded.
      *
      * The update UI shows the download only when [userInitiated] is true; a download started in
      * the background runs silently.

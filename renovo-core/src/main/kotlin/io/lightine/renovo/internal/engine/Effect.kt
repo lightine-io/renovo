@@ -6,8 +6,8 @@ import io.lightine.renovo.UpdateInfo
 /**
  * Work the engine asks the runtime to do. The engine never does I/O itself.
  *
- * The runtime executes effects in list order. [Persist] always comes first, so the intent is on
- * disk before any work starts that a process death could interrupt.
+ * The runtime runs effects in list order. [Persist] always comes first, so the new state is on
+ * disk before any work starts that a killed process could interrupt.
  */
 internal sealed interface Effect {
     /** Save [snapshot] with the [Store]. */
@@ -20,12 +20,13 @@ internal sealed interface Effect {
         val userInitiated: Boolean,
     ) : Effect
 
-    /** Make sure the periodic background check is scheduled (idempotent). */
+    /** Make sure the periodic background check is scheduled. Doing it again changes nothing. */
     data object ScheduleChecks : Effect
 
     /**
-     * Download [info] on [network]. A download started by the user runs as a foreground worker.
-     * Enqueuing the version that is already downloading continues it; it never starts a second one.
+     * Download [info] on [network]. A download the user started while the app is in the
+     * foreground runs as a foreground worker. Queuing the version that is already downloading
+     * continues that download. It never starts a second one.
      */
     data class EnqueueDownload(
         val info: UpdateInfo,

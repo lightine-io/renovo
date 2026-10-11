@@ -93,8 +93,8 @@ internal fun PermissionSwitchIllustration(modifier: Modifier = Modifier) {
     }
 }
 
-// The percent sign and its place differ between languages, and the UI specification has no string
-// for it, so the platform formats it for the language the screen is in.
+// The percent sign and its place differ between languages, and the library has no string for it,
+// so the platform formats it for the language the screen is in.
 @Composable
 internal fun percentText(fraction: Float): String {
     val locale = LocalConfiguration.current.locales[0]

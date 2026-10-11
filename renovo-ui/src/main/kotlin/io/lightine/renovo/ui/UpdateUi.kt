@@ -52,7 +52,7 @@ internal class UpdateUiActions(
 }
 
 /**
- * Draws the screen that belongs to [state], or nothing (UI specification part 2).
+ * Draws the screen that belongs to [state], or nothing.
  *
  * | State | Screen |
  * |---|---|
@@ -67,11 +67,10 @@ internal class UpdateUiActions(
  * "Later", "Not now", and "Cancel" last until the next app start, so [dismissed] keeps them for
  * the process. "Hide" and "Close" last for their download or failure, and [dismissed] keeps them
  * for the process too, so a second activity does not show them again. Every choice is also saved
- * with the screen, so a rotation, a resize, or a fold never brings back what the user put away
- * (technical specification section 8). The saved values sit in the branch of their state, so they
- * are dropped when the state moves on: a second download or a second failure shows its dialog
- * again. "Hide" is the exception: it is kept while the same download waits for a network and goes
- * on, and dropped when it ends.
+ * with the screen, so a rotation, a resize, or a fold never brings back what the user put away.
+ * The saved values sit in the branch of their state, so they are dropped when the state moves on:
+ * a second download or a second failure shows its dialog again. "Hide" is the exception: it is
+ * kept while the same download waits for a network and goes on, and dropped when it ends.
  *
  * All the branches stay in the composition while [active] is false, and only the screens are left
  * out. A host that is paused, because another window took over or a system screen is in front,
@@ -175,7 +174,7 @@ private fun DownloadingUi(
     hidden: Boolean,
     onHide: () -> Unit,
 ) {
-    // A download that no user action started shows nothing (UI specification 2.2).
+    // A download that no user action started runs silently.
     if (!userInitiated || !active || hidden) return
     DownloadingDialog(progress = progress, onHide = onHide)
 }
@@ -249,7 +248,7 @@ private fun FailedUi(
     val code = info?.versionCode ?: DismissedUpdates.NO_VERSION
     // A different failure is a new message, so it opens the dialog again even in the same branch.
     var closed by rememberSaveable(reason, info?.versionCode) { mutableStateOf(false) }
-    // A failed background check shows nothing (UI specification 2.6).
+    // A failure of something the user did not start, such as a background check, shows nothing.
     if (!userInitiated || !active || closed || dismissed.isDismissed(Dismissal.Closed, code)) return
     UpdateFailedDialog(
         reason = reason,

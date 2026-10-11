@@ -16,9 +16,10 @@ import java.io.IOException
 /**
  * Downloads one APK. Created by WorkManager, so it finds its collaborators in [WorkEnvironment].
  *
- * When WorkManager stops it (the ten-minute limit of a plain worker, a lost constraint, a
- * cancellation) the coroutine is cancelled, the partial file stays, and WorkManager reschedules it.
- * That is not a failure, so nothing is reported.
+ * When WorkManager stops it, the coroutine is cancelled and the partial file stays. After the
+ * ten-minute limit of a plain worker or a lost constraint, WorkManager runs it again later. A
+ * cancellation ends it for good, and [WorkDownloader] reports a cancel that came from outside. In
+ * none of these cases does the worker report a failure itself.
  */
 internal class DownloadWorker(
     context: Context,

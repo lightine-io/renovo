@@ -31,8 +31,8 @@ internal fun rememberIsOnline(): Boolean {
     DisposableEffect(manager) {
         val callback =
             object : ConnectivityManager.NetworkCallback() {
-                // Told apart by network, because the loss of an old default network can be reported
-                // after the new default network is already available.
+                // The callback remembers which network it saw, because the loss of an old default
+                // network can be reported after the new default network is already available.
                 private var current: Network? = null
 
                 override fun onAvailable(network: Network) {

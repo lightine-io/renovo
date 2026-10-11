@@ -29,7 +29,7 @@ import io.lightine.renovo.ui.isHardwareKeyboardAttached
 import io.lightine.renovo.ui.rememberWindowWidth
 
 /**
- * The dialog of the `Available` state (UI specification 2.1): icon, headline, the version, the
+ * The dialog of the `Available` state: icon, headline, the version, the
  * release notes card, and "Later" and "Update".
  *
  * The release notes card is left out when [info] has no release notes. The size line is left out
@@ -103,13 +103,13 @@ private fun ReleaseNotesCard(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(CARD_LABEL_GAP))
-        // A long list of notes scrolls in its own area (technical specification section 9), so the
-        // card never pushes the headline and the buttons out of a short window.
+        // A long list of notes scrolls in its own area, so the card never pushes the headline and
+        // the buttons out of a short window.
         ReleaseNotesText(
             markdown = markdown,
             modifier = Modifier.heightIn(max = NOTES_MAX_HEIGHT).verticalScroll(rememberScrollState()),
         )
-        // UI spec 2.1: the size is omitted when unknown, the version stays.
+        // The size is left out when it is not known. The version always stays.
         run {
             Spacer(Modifier.height(CARD_LINE_GAP))
             Text(

@@ -42,7 +42,7 @@ import io.lightine.renovo.ui.dialogs.LocalRenovoDialogInline
 import io.lightine.renovo.ui.rememberWindowWidth
 
 /**
- * The full-screen forced update screen (UI specification 2.5): the shape, headline, body, the
+ * The full-screen forced update screen: the shape, headline, body, the
  * installed and required versions, and then what [step] needs: the release notes and "Update now",
  * the download progress, the wait for a network, the permission steps, the installing label, the
  * failure reason with "Try again", or the unsupported-device text.
@@ -51,8 +51,8 @@ import io.lightine.renovo.ui.rememberWindowWidth
  * one column on compact windows, one centered column of at most 420 dp on medium windows, and two
  * columns on expanded windows. It scrolls when the window is too short.
  *
- * State is hoisted, so the screen needs no `Renovo`: the host passes what it reads from
- * `UpdateState.Required` and calls the matching action in each callback.
+ * The screen does not read `Renovo` itself. The caller passes in what it reads from
+ * `UpdateState.Required` and calls the matching `Renovo` action in each callback.
  *
  * ```
  * ForcedUpdateScreen(
@@ -112,7 +112,7 @@ internal fun ForcedUpdateScreen(
         // The constraints are measured inside them, so "short" means the room that is really left.
         BoxWithConstraints(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
             // The permission state holds the most content. Only a short compact window gets the tight
-            // variant, so a tall phone keeps the full layout of the design (image 30).
+            // variant, so a tall phone keeps the full layout of the design.
             val tight = width == WindowWidth.Compact && permission && maxHeight < TIGHT_BELOW_HEIGHT
             val shapeSize = shapeSizeFor(width, permission = permission, tight = tight)
             val text: @Composable (Modifier) -> Unit = { textModifier ->
@@ -218,8 +218,8 @@ private fun BarIconsMatchBackground() {
 }
 
 // The shape is smaller while the permission steps are shown, so the steps, the switch, and the
-// button fit without scrolling (UI specification part 4, state 11). On expanded windows the shape
-// sits beside the text and takes no height from it, so it keeps its size.
+// button fit without scrolling. On expanded windows the shape sits beside the text and takes no
+// height from it, so it keeps its size.
 private fun shapeSizeFor(
     width: WindowWidth,
     permission: Boolean,

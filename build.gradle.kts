@@ -23,7 +23,7 @@ allprojects {
 
 // Binary compatibility validator 0.18.2 starts its work only when it sees the `kotlin-android` plugin,
 // which AGP 9 no longer applies (Kotlin is built in). So it creates no tasks for the Android library
-// modules. The block below registers its own task types by hand for those modules. Only the published
+// modules, and the block further below registers its task types by hand. Only the published
 // `renovo-` modules have a public API to guard, so any other module in the build is skipped.
 apiValidation {
     ignoredProjects.addAll(subprojects.map { it.name }.filterNot { it.startsWith("renovo-") })
@@ -42,9 +42,9 @@ subprojects {
             // redone before the coordinates become permanent.
             publishToMavenCentral(automaticRelease = false)
 
-            // Maven Central rejects releases without a signature on every file. The property is an
-            // explicit escape hatch for the local publish check, which runs where no key exists. Any
-            // publish that does not pass it still signs, and fails loudly when the key is missing.
+            // Maven Central rejects releases without a signature on every file. The property exists
+            // only for the local publish check, which runs where no key exists. Any publish that does
+            // not pass it still signs, and fails with a clear error when the key is missing.
             if (!providers.gradleProperty("renovo.skipSigning").isPresent) {
                 signAllPublications()
             }

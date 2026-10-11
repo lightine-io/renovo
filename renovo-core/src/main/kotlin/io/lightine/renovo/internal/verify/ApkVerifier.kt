@@ -14,11 +14,11 @@ import java.security.MessageDigest
 import kotlin.coroutines.cancellation.CancellationException
 
 /**
- * Checks a downloaded APK in the order [Verifier] prescribes.
+ * Checks a downloaded APK in the order [Verifier] sets.
  *
- * This is a fail-fast check that gives the user a clear reason before the system installer runs.
- * The installer verifies the full signature, including every byte of the file, again at install
- * time; see [SignatureSchemeReader] for what Renovo's own signature check covers.
+ * It runs before the system installer, so the user gets a clear reason early when the file is
+ * wrong. The installer checks the full signature again at install time, including every byte of
+ * the file. See [SignatureSchemeReader] for what Renovo's own signature check covers.
  *
  * @param platformSdk The device's API level (`Build.VERSION.SDK_INT`). The platform picks the
  *   signature scheme and the v3 signer by API level, so the verifier must use the same one.
@@ -45,7 +45,7 @@ internal class ApkVerifier(
         } catch (e: ApkSignatureException) {
             fail(FailureReason.HashMismatch, "The downloaded APK's signature is not valid: ${e.message}", e)
         } catch (e: Exception) {
-            // The contract is "never throws". Anything else, such as a PackageManager error, is
+            // Verifier.verify must never throw. Any other error, such as a PackageManager error, is
             // still a reason not to install, and the file is the thing in doubt.
             fail(FailureReason.HashMismatch, "The downloaded file could not be verified.", e)
         }

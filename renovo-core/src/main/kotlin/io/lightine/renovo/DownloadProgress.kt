@@ -1,7 +1,7 @@
 package io.lightine.renovo
 
 /**
- * How much of the update file has been downloaded.
+ * How much of the update's APK has been downloaded.
  *
  * ```
  * val percent = progress.totalBytes?.let { total -> progress.bytesDownloaded * 100 / total }

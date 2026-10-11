@@ -17,8 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
  * The engine does no I/O and uses no Android class, so a given state and event always produce the
  * same next state and effects, and every rule is tested on the plain JVM.
  *
- * [handle] is thread-safe, but the runtime must feed events one at a time from a single consumer,
- * so effects of consecutive events (two [Effect.Persist] for example) are executed in order.
+ * [handle] is safe to call from any thread. Still, the runtime must feed events one at a time from
+ * a single loop, so the effects of two events in a row (two [Effect.Persist], for example) run in
+ * order.
  */
 internal class UpdateEngine(
     private val settings: EngineSettings,
@@ -548,7 +549,7 @@ internal class UpdateEngine(
 
     // ---- Rules ---------------------------------------------------------------------------------
 
-    /** FR-19: forced by the flag, or because the installed version is below the minimum. */
+    /** Forced by the `mandatory` flag, or because the installed version is below the minimum. */
     private fun isForced(info: UpdateInfo): Boolean = info.mandatory || info.minSupportedVersionCode.let { it != null && installed < it }
 
     private fun isUnsupported(): Boolean = snapshot.unsupportedAtVersionCode == installed
@@ -620,7 +621,7 @@ internal class UpdateEngine(
         }
     }
 
-    // FR-20: a forced update has no "ready" screen; ready and offered both wait for the user's tap.
+    // A forced update has no "ready" screen. Ready and offered both wait for the user's tap.
     private fun forcedStep(working: Model.Working): UpdateStep = when (val stage = working.stage) {
         Stage.Offered, Stage.Ready -> UpdateStep.WaitingForUser
         is Stage.Downloading -> UpdateStep.Downloading(stage.progress)

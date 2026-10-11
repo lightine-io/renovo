@@ -13,7 +13,7 @@ internal const val CHECK_WORK_NAME = "renovo-check"
 /** Unique work name of the download. */
 internal const val DOWNLOAD_WORK_NAME = "renovo-download"
 
-/** Opens a connection to [URL]. A seam so tests can serve a download without a network. */
+/** Opens a connection to [URL]. Tests replace it to serve a download without a network. */
 internal fun interface ConnectionFactory {
     fun open(url: URL): HttpURLConnection
 
@@ -28,12 +28,12 @@ internal fun interface ConnectionFactory {
 /**
  * What the two workers need and cannot get through a constructor, because the system creates them.
  *
- * The workers run in a process where `Renovo.init` has already run (the host app calls it in
- * `Application.onCreate`, before WorkManager starts any work), so everything here is filled by then.
- * The fields are `@Volatile` because workers read them on WorkManager's threads.
+ * The host app calls `Renovo.init` in `Application.onCreate`, so the fields are normally filled
+ * before WorkManager starts a worker. A worker that still finds an empty field asks WorkManager to
+ * try again later. The fields are `@Volatile` because workers read them on WorkManager's threads.
  */
 internal object WorkEnvironment {
-    /** Where a worker finds the runtime. Replaced in tests, because the facade can be initialized only once. */
+    /** Where a worker finds the runtime. Tests replace it, because `Renovo` can be initialized only once per process. */
     @Volatile
     var runtimeProvider: () -> RenovoRuntime? = { Renovo.runtimeOrNull }
 

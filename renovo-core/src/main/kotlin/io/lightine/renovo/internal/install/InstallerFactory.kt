@@ -8,7 +8,7 @@ import io.lightine.renovo.internal.Installer
 import io.lightine.renovo.internal.PermissionGate
 import io.lightine.renovo.internal.engine.EventSink
 
-/** Builds the install components for the running API level. Called once by the wiring. */
+/** Builds the install components for the running API level. Called once, when the runtime is built. */
 internal object InstallerFactory {
     /** The gate for this device: the device-wide setting below API 26, the per-app permission from 26. */
     fun permissionGate(

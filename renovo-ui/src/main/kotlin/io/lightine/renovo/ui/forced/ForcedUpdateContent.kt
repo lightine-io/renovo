@@ -83,7 +83,7 @@ internal fun ForcedTextColumn(
     onUseMobileData: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // The mockups center the text above a single column and align it to the start beside the shape.
+    // The design centers the text in a single column and aligns it to the start beside the shape.
     val centered = width != WindowWidth.Expanded
     val horizontal = if (centered) Alignment.CenterHorizontally else Alignment.Start
     val textAlign = if (centered) TextAlign.Center else TextAlign.Start
@@ -103,7 +103,7 @@ internal fun ForcedTextColumn(
                 modifier = Modifier.fillMaxWidth().semantics { heading() },
             )
             Text(
-                // The unsupported-device text takes the place of the general body (UI specification 2.7).
+                // On a device that cannot install updates, the unsupported-device text replaces the general body.
                 text =
                 stringResource(
                     if (step == UpdateStep.Unsupported) R.string.renovo_ui_unsupported_body else R.string.renovo_ui_forced_body,
@@ -114,8 +114,8 @@ internal fun ForcedTextColumn(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        // The permission state on a compact window drops the pill: the versions have no use while the
-        // user turns a switch on, and the height is what keeps "Open settings" on screen (UI specification part 4, state 11).
+        // The permission state on a short compact window drops the pill: the versions have no use while the
+        // user turns a switch on, and the height it frees keeps "Open settings" on screen.
         if (!tight) {
             VersionsPill(installedVersionName = installedVersionName, requiredVersionName = info.versionName)
         }
@@ -234,8 +234,7 @@ private fun ReleaseNotesCard(markdown: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(CARD_LABEL_GAP))
-        // Long notes scroll in their own area (technical specification section 9), so the card
-        // cannot push the button far out of reach.
+        // Long notes scroll in their own area, so the card cannot push the button far out of reach.
         ReleaseNotesText(
             markdown = markdown,
             modifier = Modifier.heightIn(max = NOTES_MAX_HEIGHT).verticalScroll(rememberScrollState()),
@@ -267,7 +266,7 @@ private fun DownloadingBlock(progress: DownloadProgress) {
     }
 }
 
-/** A label above a progress indicator, with optional [details] below it. Always start-aligned, as in the mockups. */
+/** A label above a progress indicator, with optional [details] below it. Always start-aligned, as in the design. */
 @Composable
 private fun ProgressBlock(
     label: String,
@@ -328,7 +327,7 @@ private fun ReasonCard(reason: FailureReason) {
 
 /**
  * The filled button of the forced screen. It asks for focus when it appears, so Enter on a keyboard
- * starts the action (technical specification section 8) and a screen reader begins on it.
+ * starts the action and a screen reader begins on it.
  */
 @Composable
 private fun ForcedPrimaryButton(
@@ -358,7 +357,7 @@ private fun ForcedOutlinedButton(
         onClick = onClick,
         modifier = Modifier.forcedButtonSize(width),
         shape = CircleShape,
-        // Named, not left to the defaults: the specification says `outline` border and `primary` text.
+        // Named, not left to the defaults: the design asks for an `outline` border and `primary` text.
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         border = BorderStroke(width = 1.dp, color = MaterialTheme.colorScheme.outline),
         contentPadding = forcedButtonPadding(width),
@@ -380,7 +379,7 @@ private fun forcedButtonPadding(width: WindowWidth): PaddingValues = when (width
     WindowWidth.Expanded -> PaddingValues(horizontal = EXPANDED_BUTTON_PADDING)
 }
 
-/** The label of the mobile data button: with the size when it is known, the spec's shorter form otherwise. */
+/** The label of the mobile data button: with the size when it is known, a shorter label otherwise. */
 @Composable
 private fun mobileDataLabel(sizeBytes: Long?): String {
     val context = LocalContext.current

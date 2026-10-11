@@ -4,7 +4,7 @@ import android.content.Context
 import io.lightine.renovo.RenovoConfig
 import io.lightine.renovo.internal.runtime.RuntimeAssembly
 
-/** Assembles the runtime from its components. The one place where the wiring happens. */
+/** Builds the runtime from its components. This is the one place where the parts are connected. */
 internal fun interface RuntimeFactory {
     fun create(
         context: Context,

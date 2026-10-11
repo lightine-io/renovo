@@ -1,7 +1,7 @@
 [versions]
-# The Android Gradle Plugin, Gradle and Kotlin are the latest stable releases. Kotlin's
-# compatibility page lists lower maxima than these; the build is the judge, see the report
-# of the setup task for what it said.
+# The Android Gradle Plugin, Gradle, and Kotlin are the latest stable releases. Kotlin's
+# compatibility page lists lower maximum versions than these. The build passes with them, and
+# that is what counts.
 kotlin = "2.4.21"
 agp = "9.4.1"
 spotless = "8.10.4"
@@ -15,9 +15,9 @@ androidx-work = "2.12.0"
 kotlinx-coroutines = "1.11.0"
 androidx-core = "1.19.1"
 
-# renovo-ui. Compose artifacts are pinned one by one instead of through the Compose BOM: the POM
-# of a published library then names the exact versions it was built and tested with, and
-# `androidx-compose` is the one place that moves the whole group.
+# renovo-ui. Compose artifacts are pinned one by one instead of through the Compose BOM. The POM
+# of the published library then names the exact versions it was built and tested with, and
+# `androidx-compose` is the one place that updates the whole group.
 androidx-compose = "1.12.1"
 androidx-compose-material3 = "1.4.0"
 androidx-compose-material3-adaptive = "1.3.0"

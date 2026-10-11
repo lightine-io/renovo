@@ -34,9 +34,9 @@ internal data class Span(
 )
 
 /**
- * Parses the release notes Markdown subset of the technical specification, section 9:
- * `**bold**`, `*italic*`, lines starting with "- " as bullets, `[text](https://...)` links, and
- * line breaks. Everything else is kept exactly as typed, so release notes can never fail to show.
+ * Parses the small part of Markdown that release notes may use: `**bold**`, `*italic*`, lines
+ * starting with "- " as bullets, `[text](https://...)` links, and line breaks. Everything else is
+ * kept exactly as typed, so release notes can never fail to show.
  *
  * Empty lines at the start and end are dropped, and a run of empty lines becomes one [Block.Gap].
  */

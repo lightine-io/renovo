@@ -1,9 +1,9 @@
 package io.lightine.renovo
 
-// Internal rather than private: a private constructor called from the nested class would get a
-// public synthetic accessor, which would leak into the binary API.
+// The constructor is internal, not private. A private constructor called from the nested Builder
+// would make Kotlin add a hidden public method, and that method would become part of the public API.
 /**
- * Settings for the update UI. `renovo-ui` reads them; `renovo-core` ignores them.
+ * Settings for the update UI. `renovo-ui` reads them. `renovo-core` ignores them.
  *
  * ```
  * Renovo.init(this) {
@@ -16,9 +16,22 @@ package io.lightine.renovo
  * ```
  */
 public class UiSettings internal constructor(
-    /** Light, dark, or following the system. Default [ThemeMode.System]. */
+    /**
+     * Light, dark, or following the system. Default [ThemeMode.System].
+     *
+     * ```
+     * val dark = Renovo.config.ui.themeMode == ThemeMode.Dark
+     * ```
+     */
     public val themeMode: ThemeMode,
-    /** True uses the wallpaper-based colors on Android 12 and later. Default true. */
+    /**
+     * True lets the update UI use colors taken from the wallpaper on Android 12 and later.
+     * Default true.
+     *
+     * ```
+     * val wallpaperColors = Renovo.config.ui.dynamicColor
+     * ```
+     */
     public val dynamicColor: Boolean,
 ) {
     override fun equals(other: Any?): Boolean = other is UiSettings && other.themeMode == themeMode && other.dynamicColor == dynamicColor
@@ -45,7 +58,7 @@ public class UiSettings internal constructor(
         public var themeMode: ThemeMode = ThemeMode.System
 
         /**
-         * Uses the wallpaper-based colors on Android 12 and later. Default true.
+         * Lets the update UI use colors taken from the wallpaper on Android 12 and later. Default true.
          *
          * ```
          * ui { dynamicColor = false }

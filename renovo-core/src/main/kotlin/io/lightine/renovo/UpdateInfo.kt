@@ -5,9 +5,12 @@ import io.lightine.renovo.internal.isHttpsUrl
 /**
  * Describes the latest version: what the version file says, or what a [VersionSource] returns.
  *
- * The constructor checks its values and throws [IllegalArgumentException] when [versionCode] is
- * below 1, [versionName] is blank, [apkUrl] is not an https URL, [sha256] is not 64 hexadecimal
- * characters, or [size] is not positive.
+ * The constructor checks its values. It throws [IllegalArgumentException] in any of these cases:
+ * - [versionCode] is below 1.
+ * - [versionName] is blank.
+ * - [apkUrl] is not an https URL.
+ * - [sha256] is not 64 hexadecimal characters.
+ * - [size] is not positive.
  *
  * ```
  * val info = UpdateInfo(
@@ -33,14 +36,14 @@ public class UpdateInfo(
     sha256: String? = null,
     /** APK size in bytes, used for the progress display, or null when not known. */
     public val size: Long? = null,
-    /** True makes this update a forced update: one the user cannot postpone. */
+    /** True makes this update a forced update, which the user cannot postpone. */
     public val mandatory: Boolean = false,
     /** Installed versions below this version code are forced to update. Null means no minimum. */
     public val minSupportedVersionCode: Long? = null,
     /** What is new in this version, or null when there are no notes. */
     public val releaseNotes: ReleaseNotes? = null,
 ) {
-    /** SHA-256 hash of the APK in lowercase hexadecimal, or null when the file is not hash-checked. */
+    /** SHA-256 hash of the APK in lowercase hexadecimal, or null when the file's hash is not checked. */
     public val sha256: String? = sha256?.lowercase()
 
     init {

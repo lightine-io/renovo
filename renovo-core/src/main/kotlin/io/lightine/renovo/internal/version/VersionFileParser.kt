@@ -17,7 +17,7 @@ internal class VersionFileException(
     message: String,
 ) : Exception(message)
 
-/** Reads the version file format of the technical specification, section 4. */
+/** Reads the version file. The README describes its format. */
 internal object VersionFileParser {
     /** Parses [json] or throws [VersionFileException]. Unknown fields are ignored. */
     fun parse(json: String): UpdateInfo {

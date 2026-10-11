@@ -62,8 +62,9 @@ internal class InstallPrerequisites(
 }
 
 /**
- * Starts [intent] from the resumed activity. False when no activity of the host app is resumed or
- * when no screen handles the intent; the reference warns that some settings screens may not exist.
+ * Starts [intent] from the resumed activity. Returns false when no activity of the host app is
+ * resumed, or when no screen handles the intent. The Android documentation warns that some
+ * settings screens may not exist on every device.
  */
 internal fun startFromResumedActivity(
     foreground: ForegroundTracker,

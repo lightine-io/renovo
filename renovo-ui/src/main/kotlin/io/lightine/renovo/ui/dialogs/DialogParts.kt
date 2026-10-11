@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
-// The pieces the five dialogs share, so the type and the buttons of the specification exist once.
+// The pieces the five dialogs share, so their text styles and buttons are defined in one place.
 
 /** The headline of a dialog: `headlineSmall`, medium weight. Screen readers announce it as a heading. */
 @Composable

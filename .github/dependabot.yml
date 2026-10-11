@@ -1,8 +1,8 @@
 # Dependabot configuration for Renovo.
 #
 # Schedules version updates for Gradle dependencies and GitHub Actions. Security updates are
-# enabled separately in the repository settings (Code security and analysis > Dependabot security
-# updates) and use this file's `package-ecosystem` entries for routing.
+# turned on separately in the repository settings (Code security and analysis > Dependabot security
+# updates). They use the `package-ecosystem` entries in this file to know where each dependency lives.
 #
 # See:
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
@@ -33,13 +33,14 @@ updates:
     labels:
       - dependencies
       - github-actions
-      # Actions bumps are CI-only and never reach a host app, so this label satisfies the
-      # changelog gate (.github/workflows/changelog.yml) up front. Gradle bumps above do NOT get
-      # it: they can change the shipped library, so the changelog decision stays per pull request.
+      # An Actions update changes only CI and never reaches a host app, so this label passes the
+      # changelog check (.github/workflows/changelog.yml) right away. Gradle updates above do NOT
+      # get it: they can change the shipped library, so each of those pull requests decides itself.
       - no-changelog
-    # One grouped pull request per cycle instead of one per action. Under strict branch
-    # protection, N separate pull requests cost N sequential CI cycles, because each merge puts
-    # the rest behind main.
+    # One pull request per month for all actions, instead of one per action. Branch protection
+    # requires every pull request to be up to date with main before it merges. So each merge puts
+    # the other pull requests behind main, and N separate pull requests cost N CI runs, one after
+    # another.
     groups:
       github-actions:
         patterns:
