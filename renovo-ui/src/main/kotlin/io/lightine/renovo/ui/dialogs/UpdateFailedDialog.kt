@@ -16,6 +16,7 @@ import io.lightine.renovo.FailureReason
 import io.lightine.renovo.ui.IconTile
 import io.lightine.renovo.ui.InnerCard
 import io.lightine.renovo.ui.R
+import io.lightine.renovo.ui.reasonRes
 
 /**
  * The dialog of the `Failed` state after something the user started (UI specification 2.6): error
@@ -92,16 +93,4 @@ internal fun FailureReason.bodyRes(): Int = when (this) {
     FailureReason.InstallRejected,
     FailureReason.Cancelled,
     -> R.string.renovo_ui_failed_body_general
-}
-
-@StringRes
-internal fun FailureReason.reasonRes(): Int = when (this) {
-    FailureReason.Network -> R.string.renovo_ui_failed_reason_network
-    FailureReason.Parse -> R.string.renovo_ui_failed_reason_parse
-    FailureReason.HashMismatch -> R.string.renovo_ui_failed_reason_hash
-    FailureReason.SignatureMismatch -> R.string.renovo_ui_failed_reason_signature
-    FailureReason.NotNewer -> R.string.renovo_ui_failed_reason_not_newer
-    FailureReason.Storage -> R.string.renovo_ui_failed_reason_storage
-    FailureReason.InstallRejected -> R.string.renovo_ui_failed_reason_rejected
-    FailureReason.Cancelled -> R.string.renovo_ui_failed_reason_cancelled
 }
