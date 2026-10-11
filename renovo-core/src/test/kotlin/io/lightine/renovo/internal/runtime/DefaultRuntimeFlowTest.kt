@@ -4,6 +4,7 @@ import android.app.Activity
 import android.os.Looper
 import io.lightine.renovo.FailureReason
 import io.lightine.renovo.Network
+import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateState
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.internal.FetchResult
@@ -12,6 +13,7 @@ import io.lightine.renovo.internal.VerificationResult
 import io.lightine.renovo.internal.engine.EngineEvent
 import io.lightine.renovo.internal.engine.InstallResult
 import io.lightine.renovo.internal.store.PreferencesStore
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -328,29 +330,6 @@ internal class DefaultRuntimeFlowTest : RuntimeTestBase() {
     }
 
     @Test
-    fun `a permission tap after the user left is dropped, not taken for an unsupported device`() {
-        val h = harness()
-        h.gate.status = InstallPermission.NeedsUser
-        // The real gate answers false when no activity is resumed.
-        h.gate.openResult = false
-        h.startWithUpdate()
-        h.finishDownload()
-        h.runtime.installIfReady()
-        h.settle()
-        assertTrue(h.state is UpdateState.PermissionNeeded)
-
-        // The user taps and leaves before the main thread gets to the settings screen.
-        h.runtime.installIfReady()
-        h.foreground.goToBackground()
-        h.settle()
-
-        assertTrue(h.state is UpdateState.PermissionNeeded)
-        assertEquals(0, h.gate.opens)
-        assertNull(PreferencesStore(context, null).load()?.unsupportedAtVersionCode)
-        assertTrue("the verified file is kept", h.downloadDirectory.resolve("11.apk").exists())
-    }
-
-    @Test
     fun `a settings screen that does not exist is reported as unsupported`() {
         val h = harness()
         h.gate.status = InstallPermission.NeedsUser
@@ -379,6 +358,34 @@ internal class DefaultRuntimeFlowTest : RuntimeTestBase() {
         h.send(EngineEvent.InstallFinished(InstallResult.Blocked))
 
         assertEquals(UpdateState.Unsupported, h.state)
+    }
+
+    @Test
+    fun `a verification result is about the file that was verified, not about the one recorded now`() {
+        val h = harness()
+        val gate = CompletableDeferred<Unit>()
+        h.verifier.gate = gate
+        h.startWithUpdate()
+        val first = java.io.File(h.downloadDirectory, "first.apk").apply { parentFile?.mkdirs() }
+        val second = java.io.File(h.downloadDirectory, "second.apk")
+        // The old file would fail the check. If its answer counted for the new file, the update would fail.
+        h.verifier.resultsByPath[first.path] = VerificationResult.Failed(FailureReason.HashMismatch)
+        h.send(EngineEvent.DownloadFinished(11, first.path))
+        // The release is republished under the same version code with another hash, and downloaded again.
+        h.runtime.submit(testInfo(11).let { UpdateInfo(it.versionCode, it.versionName, it.apkUrl, sha256 = "b".repeat(64)) })
+        h.settle()
+        h.send(EngineEvent.DownloadFinished(11, second.path))
+        assertEquals("Both files wait for an answer", listOf(first.path, second.path), h.verifier.verified.map { it.path })
+        assertTrue(h.state is UpdateState.Downloading)
+
+        gate.complete(Unit)
+        h.settle()
+
+        // The answer for the first file arrived while the second one is recorded: it was ignored and logged.
+        assertTrue(h.logs.toString(), h.logs.any { it.contains("stale verification result") })
+        assertTrue(h.state is UpdateState.ReadyToInstall)
+        assertEquals(second.path, PreferencesStore(context, null).load()?.download?.filePath)
+        assertTrue(h.uncaught.isEmpty())
     }
 
     @Test

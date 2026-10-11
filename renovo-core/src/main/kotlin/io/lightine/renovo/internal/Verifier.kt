@@ -10,7 +10,9 @@ import java.io.File
  * The implementing task must guarantee, in this order, stopping at the first failure:
  * 1. The SHA-256 of `file` equals `info.sha256` when that is set ([FailureReason.HashMismatch]).
  * 2. The APK's package name equals the host app's ([FailureReason.SignatureMismatch]).
- * 3. The APK's version code is higher than `installedVersionCode` ([FailureReason.NotNewer]).
+ * 3. The APK's version code is higher than `installedVersionCode` ([FailureReason.NotNewer]), and
+ *    then equal to `info.versionCode` ([FailureReason.HashMismatch]: the file is not the one the
+ *    version file describes).
  * 4. The APK's signing certificates (schemes v2, v3, and v3.1) match the installed app's, and the
  *    signature over the signed data is valid ([FailureReason.SignatureMismatch]).
  *

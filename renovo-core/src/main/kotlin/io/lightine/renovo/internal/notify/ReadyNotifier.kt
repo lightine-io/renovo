@@ -20,6 +20,9 @@ import io.lightine.renovo.internal.Notifier
  *
  * The helpers are used because the platform has no notification builder that is free of deprecated
  * API on Android 7.x, and they hide the Android 8 channel split.
+ *
+ * The small icon is the library drawable `renovo_ic_update_ready`. A host app replaces it by defining
+ * a drawable with the same name.
  */
 internal class ReadyNotifier(
     context: Context,
@@ -59,7 +62,7 @@ internal class ReadyNotifier(
         val builder =
             NotificationCompat
                 .Builder(appContext, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                .setSmallIcon(R.drawable.renovo_ic_update_ready)
                 .setContentTitle(appContext.getString(R.string.renovo_notification_ready_title))
                 .setContentText(appContext.getString(R.string.renovo_notification_ready_text, info.versionName))
                 .setAutoCancel(true)

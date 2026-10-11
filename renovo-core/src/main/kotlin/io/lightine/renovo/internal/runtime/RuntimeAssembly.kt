@@ -3,6 +3,7 @@ package io.lightine.renovo.internal.runtime
 import android.content.Context
 import io.lightine.renovo.RenovoConfig
 import io.lightine.renovo.internal.RenovoRuntime
+import io.lightine.renovo.internal.SafeLogger
 import io.lightine.renovo.internal.engine.UpdateEngine
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -15,20 +16,18 @@ import kotlinx.coroutines.launch
 internal object RuntimeAssembly {
     fun create(
         context: Context,
-        config: RenovoConfig,
+        hostConfig: RenovoConfig,
     ): RenovoRuntime {
+        // The one place the host app's logger is wrapped. Everything below, the engine and every
+        // component, gets the config with the safe logger, so a logger that throws cannot drop an
+        // event or crash a worker.
+        val config = hostConfig.withLogger(SafeLogger.wrap(hostConfig.logger))
         // A supervisor, so one failed background task does not cancel the loop. The handler keeps an
         // exception nobody caught from reaching the thread's handler, which would crash the host app.
         val scope =
             CoroutineScope(
                 SupervisorJob() + Dispatchers.Default +
-                    CoroutineExceptionHandler { _, error ->
-                        try {
-                            config.logger?.log("A background task of Renovo failed.", error)
-                        } catch (_: Exception) {
-                            // A logger that throws has nowhere left to report.
-                        }
-                    },
+                    CoroutineExceptionHandler { _, error -> config.logger?.log("A background task of Renovo failed.", error) },
             )
         try {
             val queue = EventQueue()

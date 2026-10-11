@@ -240,8 +240,8 @@ internal class DefaultRuntime(
             val event =
                 try {
                     when (val result = components.verifier.verify(File(effect.filePath), effect.info, installedVersionCode)) {
-                        VerificationResult.Passed -> EngineEvent.VerificationPassed(versionCode)
-                        is VerificationResult.Failed -> EngineEvent.VerificationFailed(versionCode, result.reason)
+                        VerificationResult.Passed -> EngineEvent.VerificationPassed(versionCode, effect.filePath)
+                        is VerificationResult.Failed -> EngineEvent.VerificationFailed(versionCode, effect.filePath, result.reason)
                     }
                 } catch (e: CancellationException) {
                     throw e
@@ -249,7 +249,7 @@ internal class DefaultRuntime(
                     log("Verifying the download failed unexpectedly.", e)
                     // The same answer the verifier itself gives for what it cannot explain: the
                     // file is the thing in doubt, so it is not installed.
-                    EngineEvent.VerificationFailed(versionCode, FailureReason.HashMismatch)
+                    EngineEvent.VerificationFailed(versionCode, effect.filePath, FailureReason.HashMismatch)
                 }
             queue.send(event)
         }
@@ -352,13 +352,6 @@ internal class DefaultRuntime(
     }
 
     private fun openInstallPermission() {
-        // The gate also answers false when no activity is resumed, for example when the user left
-        // right after the tap. That says nothing about the device, and "unsupported" would stop
-        // updates until the next app version, so the tap is dropped and the next one tries again.
-        if (components.foreground.resumedActivity == null) {
-            log("No activity is resumed, so the install permission screen was not opened.", null)
-            return
-        }
         val opened =
             try {
                 components.permissionGate.openSettings()

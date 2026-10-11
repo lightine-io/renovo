@@ -85,10 +85,9 @@ internal class ApkTransfer(
         val part = files.part(versionCode)
         val length = if (part.isFile) part.length() else 0L
         val validator = files.readValidator(versionCode)
-        // Without a validator the file cannot be checked against the server's, so it starts over.
-        // The size in the version file is not compared: it is a display hint and may be wrong, and
-        // the server already answers a stale partial file with a 416 or a full 200.
-        if (length > 0 && validator == null) {
+        // Without a validator the file cannot be checked against the server's, and a partial file
+        // longer than the whole file is stale. Both start over.
+        if (length > 0 && (validator == null || (expectedSize != null && length > expectedSize))) {
             files.deletePartial(versionCode)
             return ResumePoint(0, null)
         }
@@ -155,8 +154,10 @@ internal class ApkTransfer(
         base: URL? = null,
     ): URL = try {
         if (base == null) URL(spec) else URL(base, spec)
-    } catch (e: MalformedURLException) {
-        throw RejectedDownloadException("The download address is not valid: ${e.message}")
+    } catch (_: MalformedURLException) {
+        // The exception's message repeats the offending text, which for a redirect is whatever the
+        // server sent. The worker logs this message, so it stays fixed.
+        throw RejectedDownloadException("The download address is not valid.")
     }
 
     private suspend fun handle(

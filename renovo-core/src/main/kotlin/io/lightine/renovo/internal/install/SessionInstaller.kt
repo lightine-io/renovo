@@ -44,13 +44,27 @@ internal class SessionInstaller(
             logger?.log("An install is already running. The new request is ignored.", null)
             return
         }
-        stagingExecutor.execute { stage(file) }
+        try {
+            stagingExecutor.execute { stage(file) }
+        } catch (e: RuntimeException) {
+            // The claim above must not outlive a request that never started.
+            failBeforeSession(InstallResult.Rejected, "Could not start the install.", e)
+        }
     }
 
+    // Runs on a thread of our own. An exception that leaves it would reach the thread's handler,
+    // which crashes the host app, so every RuntimeException is caught and turned into "rejected".
     private fun stage(file: File) {
-        val installer = context.packageManager.packageInstaller
-        abandonLeftoverSessions(installer)
-        val length = file.length()
+        val installer: PackageInstaller
+        val length: Long
+        try {
+            installer = context.packageManager.packageInstaller
+            abandonLeftoverSessions(installer)
+            length = file.length()
+        } catch (e: RuntimeException) {
+            failBeforeSession(InstallResult.Rejected, "Could not reach the installer.", e)
+            return
+        }
         val sessionId =
             try {
                 installer.createSession(sessionParams(context.packageName, length))
@@ -63,6 +77,10 @@ internal class SessionInstaller(
                 return
             } catch (e: IllegalArgumentException) {
                 failBeforeSession(InstallResult.Rejected, "The installer refused the session settings.", e)
+                return
+            } catch (e: RuntimeException) {
+                // For example an IllegalStateException, or a failed call to the system server.
+                failBeforeSession(InstallResult.Rejected, "Could not create an installer session.", e)
                 return
             }
         sessions.opened(sessionId)
@@ -77,7 +95,9 @@ internal class SessionInstaller(
                     }
                 }
             }
-        if (staged) mainExecutor.execute { commit(sessionId) }
+        if (staged) {
+            runOrFail(sessionId, "Could not hand the commit to the main thread.") { mainExecutor.execute { commit(sessionId) } }
+        }
     }
 
     private fun commit(sessionId: Int) {
@@ -97,9 +117,9 @@ internal class SessionInstaller(
                 return true
             } catch (e: IOException) {
                 e
-            } catch (e: IllegalArgumentException) {
-                e
-            } catch (e: SecurityException) {
+            } catch (e: RuntimeException) {
+                // IllegalArgumentException and SecurityException among others. Nothing may leave
+                // here: this runs on our own thread and on the main thread of the host app.
                 e
             }
         logger?.log(message, error)

@@ -163,6 +163,73 @@ class SessionInstallerTest {
         assertNull(sessions.openSessionId)
         assertTrue(sessions.tryBegin())
     }
+
+    // The three tests below use a direct executor, so an exception that escaped the installer would
+    // fail the test itself, as it would crash the host app's thread in production.
+
+    @Test
+    @Config(shadows = [BrokenCreatePackageInstaller::class])
+    fun `a runtime exception from createSession is rejected and releases the claim`() {
+        installer().install(apk(), info)
+
+        assertEquals(listOf(EngineEvent.InstallFinished(InstallResult.Rejected)), sink.events)
+        assertTrue(logger.contains("Could not create an installer session"))
+        assertNull(sessions.openSessionId)
+        assertTrue(sessions.tryBegin())
+    }
+
+    @Test
+    @Config(shadows = [BrokenOpenPackageInstaller::class])
+    fun `a runtime exception while staging abandons the session and is rejected`() {
+        installer().install(apk(), info)
+
+        assertEquals(listOf(EngineEvent.InstallFinished(InstallResult.Rejected)), sink.events)
+        assertTrue(logger.contains("Could not copy the APK"))
+        assertNull(sessions.openSessionId)
+        assertTrue("the session must be abandoned", packageInstaller.mySessions.isEmpty())
+        assertTrue(sessions.tryBegin())
+    }
+
+    @Test
+    @Config(shadows = [BrokenCommitSession::class])
+    fun `a runtime exception while committing abandons the session and is rejected`() {
+        installer().install(apk(), info)
+
+        assertEquals("no start is reported for a commit that failed", listOf(EngineEvent.InstallFinished(InstallResult.Rejected)), sink.events)
+        assertTrue(logger.contains("Could not commit the installer session"))
+        assertNull(sessions.openSessionId)
+        assertTrue("the session must be abandoned", packageInstaller.mySessions.isEmpty())
+        assertTrue(sessions.tryBegin())
+    }
+
+    @Test
+    fun `an executor that refuses the work does not leave the install claimed`() {
+        installer(stagingExecutor = { throw java.util.concurrent.RejectedExecutionException("shut down") }).install(apk(), info)
+
+        assertEquals(listOf(EngineEvent.InstallFinished(InstallResult.Rejected)), sink.events)
+        assertTrue(sessions.tryBegin())
+    }
+}
+
+/** A system server that fails with something other than the documented exceptions. */
+@Implements(PackageInstaller::class)
+class BrokenCreatePackageInstaller : ShadowPackageInstaller() {
+    @Implementation
+    override fun createSession(params: PackageInstaller.SessionParams): Int = throw IllegalStateException("The system server is not available.")
+}
+
+/** Creates the session fine, then fails to open it for writing. */
+@Implements(PackageInstaller::class)
+class BrokenOpenPackageInstaller : ShadowPackageInstaller() {
+    @Implementation
+    override fun openSession(sessionId: Int): PackageInstaller.Session = throw IllegalStateException("The system server is not available.")
+}
+
+/** A session whose commit fails with an unexpected exception. */
+@Implements(PackageInstaller.Session::class)
+class BrokenCommitSession : ShadowPackageInstaller.ShadowSession() {
+    @Implementation
+    override fun commit(statusReceiver: IntentSender): Unit = throw IllegalStateException("The system server is not available.")
 }
 
 /** Behaves like a restricted user, where the reference says createSession throws. */

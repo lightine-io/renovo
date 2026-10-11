@@ -8,7 +8,9 @@ import io.lightine.renovo.UpdateInfo
  * Something that happened, reported to [UpdateEngine.handle].
  *
  * Download and verification events carry the version code they belong to, so a late event from a
- * download that was replaced by a newer version cannot change the state of the newer one.
+ * download that was replaced by a newer version cannot change the state of the newer one. A
+ * verification event also carries the path of the file it is about, because a version can be
+ * downloaded again after a rejection and the same code then names a different file.
  */
 internal sealed interface EngineEvent {
     /**
@@ -71,12 +73,16 @@ internal sealed interface EngineEvent {
         val reason: FailureReason,
     ) : EngineEvent
 
+    /** The file at [filePath] passed every check. Ignored unless that is the file the engine waits for. */
     data class VerificationPassed(
         val versionCode: Long,
+        val filePath: String,
     ) : EngineEvent
 
+    /** The file at [filePath] failed a check. Ignored unless that is the file the engine waits for. */
     data class VerificationFailed(
         val versionCode: Long,
+        val filePath: String,
         val reason: FailureReason,
     ) : EngineEvent
 
@@ -93,11 +99,7 @@ internal sealed interface EngineEvent {
         val result: InstallResult,
     ) : EngineEvent
 
-    /**
-     * The install was not started: `canInstallNow` returned false, or the app is not in the
-     * foreground. Also sent when a session waiting for the user's confirmation was withdrawn because
-     * `canInstallNow` returned false by the time the user came back.
-     */
+    /** The install was not started: `canInstallNow` returned false, or the app is not in the foreground. */
     data object InstallNotAllowedNow : EngineEvent
 
     /** The device offers no way to allow the install (policy, restriction, missing settings screen). */

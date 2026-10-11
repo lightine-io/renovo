@@ -1,12 +1,12 @@
 package io.lightine.renovo.internal.work
 
 import android.content.Context
-import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import io.lightine.renovo.DownloadProgress
 import io.lightine.renovo.FailureReason
+import io.lightine.renovo.internal.RenovoRuntime
 import io.lightine.renovo.internal.engine.EngineEvent
 import io.lightine.renovo.internal.engine.EventSink
 import io.lightine.renovo.internal.isHttpsUrl
@@ -27,15 +27,36 @@ internal class DownloadWorker(
     override suspend fun doWork(): Result {
         val runtime = WorkEnvironment.runtimeProvider()
         if (runtime == null) {
-            // Nobody to report to: Renovo.init did not run in this process.
-            Log.w(TAG, "The download worker started before Renovo.init ran, so it did nothing.")
-            return Result.failure()
+            // Renovo.init did not run yet in this process, so there is nobody to report to and no
+            // host logger to log to. Failing would end the work for good. Retrying lets a later run,
+            // after init, do the download.
+            return Result.retry()
         }
         val input = DownloadInput.from(inputData)
         if (input == null) {
             runtime.logger?.log("The download worker got no usable request.", null)
             return Result.failure()
         }
+        val events = runtime.events
+        return try {
+            download(runtime, input)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Anything not handled below, such as a RuntimeException from the platform. The engine
+            // waits for this download to finish or fail, so it must hear one of the two, and the report
+            // goes first in case the host logger misbehaves. The log message is fixed text and carries
+            // no error: exception messages can repeat the address or a path.
+            val result = fail(events, input.versionCode, FailureReason.Network)
+            runtime.logger?.log("The download of version ${input.versionCode} stopped unexpectedly.", null)
+            result
+        }
+    }
+
+    private suspend fun download(
+        runtime: RenovoRuntime,
+        input: DownloadInput,
+    ): Result {
         val events = runtime.events
         if (!isHttpsUrl(input.apkUrl)) {
             runtime.logger?.log("Refused to download version ${input.versionCode} from a non-https address.", null)
@@ -68,10 +89,7 @@ internal class DownloadWorker(
                 freeSpace = WorkEnvironment.freeSpace ?: FreeSpace.forDevice(),
                 clock = WorkEnvironment.clock,
                 onProgress = { bytes, total ->
-                    // A server can announce, and send, an empty file. DownloadProgress takes no total of 0,
-                    // and the exception would end the worker without the engine ever hearing an outcome.
-                    val progress = DownloadProgress(bytes, total?.takeIf { it > 0 })
-                    events.send(EngineEvent.DownloadProgressed(input.versionCode, progress))
+                    events.send(EngineEvent.DownloadProgressed(input.versionCode, DownloadProgress(bytes, total)))
                     foreground?.update(bytes, total)
                 },
             )
@@ -109,8 +127,6 @@ internal class DownloadWorker(
     }
 
     companion object {
-        private const val TAG = "Renovo"
-
         /** Retries after the first run. WorkManager counts the first run as attempt 0. */
         const val MAX_RETRIES = 5
     }

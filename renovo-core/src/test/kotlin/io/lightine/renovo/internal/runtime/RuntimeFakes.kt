@@ -20,6 +20,7 @@ import io.lightine.renovo.internal.engine.EventSink
 import io.lightine.renovo.internal.engine.Snapshot
 import io.lightine.renovo.internal.engine.Store
 import io.lightine.renovo.internal.work.CheckRunner
+import kotlinx.coroutines.CompletableDeferred
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.time.Duration
@@ -136,6 +137,13 @@ internal class FakeVerifier : Verifier {
 
     @Volatile
     var failure: RuntimeException? = null
+
+    /** The answer for the file at a path, when it differs from [result]. */
+    val resultsByPath = java.util.concurrent.ConcurrentHashMap<String, VerificationResult>()
+
+    /** When set, every verification waits for it, so a test can decide when the answers arrive. */
+    @Volatile
+    var gate: CompletableDeferred<Unit>? = null
     val verified = CopyOnWriteArrayList<File>()
     val installedVersionCodes = CopyOnWriteArrayList<Long>()
 
@@ -146,8 +154,9 @@ internal class FakeVerifier : Verifier {
     ): VerificationResult {
         verified += file
         installedVersionCodes += installedVersionCode
+        gate?.await()
         failure?.let { throw it }
-        return result
+        return resultsByPath[file.path] ?: result
     }
 }
 
@@ -222,13 +231,10 @@ internal class FakeNotifier : Notifier {
     }
 }
 
-/** @param newActivity Makes the activity that is resumed while the app is in the foreground. */
 internal class FakeForeground(
     @Volatile override var isInForeground: Boolean = true,
-    private val newActivity: () -> Activity?,
 ) : ForegroundTracker {
-    @Volatile
-    override var resumedActivity: Activity? = if (isInForeground) newActivity() else null
+    override val resumedActivity: Activity? = null
     private val callbacks = CopyOnWriteArrayList<() -> Unit>()
 
     val callbackCount: Int
@@ -238,17 +244,10 @@ internal class FakeForeground(
         callbacks += callback
     }
 
-    /** What the real tracker does when the user brings the app back: an activity resumes, then the callbacks run. */
+    /** What the real tracker does when the user brings the app back. */
     fun comeToForeground() {
         isInForeground = true
-        if (resumedActivity == null) resumedActivity = newActivity()
         callbacks.forEach { it() }
-    }
-
-    /** What the real tracker sees when the user leaves the app. */
-    fun goToBackground() {
-        isInForeground = false
-        resumedActivity = null
     }
 }
 
