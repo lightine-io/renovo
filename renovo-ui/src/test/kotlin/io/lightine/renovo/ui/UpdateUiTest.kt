@@ -282,6 +282,43 @@ class UpdateUiTest {
     }
 
     @Test
+    fun hideIsKeptForTheProcessWhenTheWholeTreeIsBuiltAgain() {
+        val info = uiInfo()
+        show(UpdateState.Downloading(info, someProgress(), userInitiated = true))
+        click(R.string.renovo_ui_hide)
+
+        // Like a second activity in the same process: nothing is saved with the new tree.
+        rule.runOnIdle { generation++ }
+        rule.waitForIdle()
+        assertShown()
+        assertTrue(dismissed.isDismissed(Dismissal.Hidden, 42))
+
+        // The next download is a new one, in every window.
+        change(UpdateState.Failed(FailureReason.Network, info, userInitiated = false))
+        rule.runOnIdle { generation++ }
+        change(UpdateState.Downloading(info, someProgress(), userInitiated = true))
+        assertShown(Screen.Downloading)
+    }
+
+    @Test
+    fun closeIsKeptForTheProcessWhenTheWholeTreeIsBuiltAgain() {
+        val info = uiInfo()
+        show(UpdateState.Failed(FailureReason.Network, info, userInitiated = true))
+        click(R.string.renovo_ui_close)
+
+        // Like a second activity in the same process: nothing is saved with the new tree.
+        rule.runOnIdle { generation++ }
+        rule.waitForIdle()
+        assertShown()
+        assertTrue(dismissed.isDismissed(Dismissal.Closed, 42))
+
+        // A different failure is a new message, in every window.
+        rule.runOnIdle { generation++ }
+        change(UpdateState.Failed(FailureReason.Storage, info, userInitiated = true))
+        assertShown(Screen.UpdateFailed)
+    }
+
+    @Test
     fun aFreshProcessAsksAgain() {
         show(UpdateState.Available(uiInfo()))
         click(R.string.renovo_ui_later)
@@ -342,6 +379,23 @@ class UpdateUiTest {
         assertShown()
 
         change(UpdateState.Downloading(uiInfo(versionCode = 43), someProgress(), userInitiated = true))
+        assertShown(Screen.Downloading)
+    }
+
+    @Test
+    fun aHiddenDownloadStaysHiddenWhenItWaitsForANetworkAndGoesOn() {
+        val info = uiInfo()
+        show(UpdateState.Downloading(info, someProgress(), userInitiated = true))
+        click(R.string.renovo_ui_hide)
+
+        // The connection drops and comes back: the same download goes on.
+        change(UpdateState.WaitingForNetwork(info))
+        change(UpdateState.Downloading(info, someProgress(), userInitiated = true))
+        assertShown()
+
+        // A new download after a failure is a new one, so its dialog shows.
+        change(UpdateState.Failed(FailureReason.Network, info, userInitiated = false))
+        change(UpdateState.Downloading(info, someProgress(), userInitiated = true))
         assertShown(Screen.Downloading)
     }
 

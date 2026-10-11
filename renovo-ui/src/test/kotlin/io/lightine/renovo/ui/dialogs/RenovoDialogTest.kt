@@ -1,5 +1,6 @@
 package io.lightine.renovo.ui.dialogs
 
+import android.view.WindowManager
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
@@ -23,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowDialog
 
 // The frame behind all five dialogs: widths, short windows, and the keys.
 @RunWith(RobolectricTestRunner::class)
@@ -124,6 +126,16 @@ class RenovoDialogTest {
         show(dismissible = false, inline = false)
         rule.onNodeWithText("Go").performKeyInput { pressKey(Key.Escape) }
         assertEquals(0, dismissed)
+    }
+
+    @Test
+    fun theWindowIsDimmedWithTheMaterialScrimOpacity() {
+        show(inline = false)
+        rule.waitForIdle()
+        val attributes = ShadowDialog.getLatestDialog().window!!.attributes
+        assertTrue(attributes.flags and WindowManager.LayoutParams.FLAG_DIM_BEHIND != 0)
+        // The baseline scrim is opaque black, so the dim is the 32 percent Material scrim opacity.
+        assertEquals(0.32f, attributes.dimAmount, 0.001f)
     }
 
     private companion object {
