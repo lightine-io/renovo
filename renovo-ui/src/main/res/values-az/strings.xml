@@ -5,6 +5,7 @@
     <string name="renovo_ui_available_body">%1$s versiyası yüklənməyə hazırdır. Saxlanılmış məlumatlarınız bu cihazda qalır.</string>
     <string name="renovo_ui_whats_new">Yeniliklər</string>
     <string name="renovo_ui_version_line">Versiya %1$s - %2$s</string>
+    <string name="renovo_ui_version_line_no_size">Versiya %1$s</string>
     <string name="renovo_ui_later">Sonra</string>
     <string name="renovo_ui_update">Yenilə</string>
     <string name="renovo_ui_keyboard_hint">Enter - yenilə, Esc - sonra</string>

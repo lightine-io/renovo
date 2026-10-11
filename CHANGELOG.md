@@ -19,3 +19,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Local HTTPS test server for the sample app: version file with ETag, APK with Range and If-Range, and a switch that cuts a download to test resume.
 - Update UI foundations in renovo-ui: theme and progress wrappers, window width classes, every screen string in English and Azerbaijani, the release notes renderer, the shared tiles and the forced-screen shape, previews, and the first Roborazzi screenshot test.
 - The runtime behind `Renovo.init`: one event loop feeds the engine and runs its effects through the real components, restores the state from the store on start, and keeps every component failure away from the host app.
+- The five dialogs of the optional update flow: update available, downloading, ready to install, first-time permission, and update not installed, with keyboard handling, previews, and screenshots.
