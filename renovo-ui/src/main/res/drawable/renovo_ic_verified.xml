@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material Symbols "verified_user" (outlined): a shield with a check. The group moves the 960 unit
+     grid into view. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+    <group android:translateY="960">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="m438,-338 l226,-226 l-57,-57 l-169,169 l-84,-84 l-57,57 l141,141 Z m42,258 q-139,-35 -229.5,-159.5 T160,-516 v-244 l320,-120 l320,120 v244 q0,152 -90.5,276.5 T480,-80 Z m0,-84 q104,-33 172,-132 t68,-220 v-189 l-240,-90 l-240,90 v189 q0,121 68,220 t172,132 Z m0,-316 Z" />
+    </group>
+</vector>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 2.1 Update available -->
+    <string name="renovo_ui_available_headline">Update available</string>
+    <string name="renovo_ui_available_body">Version %1$s is ready to download. Your saved data stays on this device.</string>
+    <string name="renovo_ui_whats_new">What\'s new</string>
+    <string name="renovo_ui_version_line">Version %1$s - %2$s</string>
+    <string name="renovo_ui_later">Later</string>
+    <string name="renovo_ui_update">Update</string>
+    <string name="renovo_ui_keyboard_hint">Enter to update - Esc for later</string>
+
+    <!-- 2.2 Downloading -->
+    <string name="renovo_ui_downloading_headline">Downloading update</string>
+    <string name="renovo_ui_downloading_body">You can keep working. The download continues in the background and resumes if the connection drops.</string>
+    <string name="renovo_ui_download_size">%1$s of %2$s</string>
+    <string name="renovo_ui_hide">Hide</string>
+    <string name="renovo_ui_download_progress_description">Download progress, %1$s percent</string>
+
+    <!-- 2.3 Ready to install -->
+    <string name="renovo_ui_ready_headline">Ready to install</string>
+    <string name="renovo_ui_ready_body">Version %1$s is downloaded. The app will close while the update installs. Your saved data is kept.</string>
+    <string name="renovo_ui_ready_verified">Verified - file is intact and from the same publisher</string>
+    <string name="renovo_ui_not_now">Not now</string>
+    <string name="renovo_ui_install">Install</string>
+
+    <!-- 2.4 First-time permission -->
+    <string name="renovo_ui_permission_headline">Allow this app to update itself</string>
+    <string name="renovo_ui_permission_body">Android asks for this once. After that, updates install with fewer steps.</string>
+    <string name="renovo_ui_permission_step_1">Tap Open settings</string>
+    <string name="renovo_ui_permission_step_2">Turn on the switch shown below</string>
+    <string name="renovo_ui_permission_step_2_legacy">Turn on installing from unknown sources</string>
+    <string name="renovo_ui_permission_step_3">Go back - the update continues</string>
+    <string name="renovo_ui_permission_switch_label">Allow from this source</string>
+    <string name="renovo_ui_cancel">Cancel</string>
+    <string name="renovo_ui_open_settings">Open settings</string>
+
+    <!-- 2.5 Forced update -->
+    <string name="renovo_ui_forced_headline">Update required</string>
+    <string name="renovo_ui_forced_body">This version is no longer supported. Update to keep using the app. Data saved on this device is kept.</string>
+    <string name="renovo_ui_forced_installed">Installed</string>
+    <string name="renovo_ui_forced_required">Required</string>
+    <string name="renovo_ui_update_now">Update now</string>
+    <string name="renovo_ui_forced_offline_note">No connection? The update starts when the device is online.</string>
+    <string name="renovo_ui_forced_progress_label">Downloading update</string>
+    <string name="renovo_ui_forced_installing_label">Installing update</string>
+    <string name="renovo_ui_forced_waiting_note">Waiting for Wi-Fi. The update starts when the device connects to Wi-Fi.</string>
+    <string name="renovo_ui_forced_mobile_data_button">Download with mobile data (%1$s)</string>
+
+    <!-- 2.6 Update not installed -->
+    <string name="renovo_ui_failed_headline">Update not installed</string>
+    <string name="renovo_ui_failed_body_verification">The downloaded file did not pass the safety check, so nothing was changed. Your current version keeps working.</string>
+    <string name="renovo_ui_failed_body_general">The update could not be completed. Your current version keeps working.</string>
+    <string name="renovo_ui_failed_reason_label">Reason:</string>
+    <string name="renovo_ui_failed_reason_network">no connection</string>
+    <string name="renovo_ui_failed_reason_hash">file check failed</string>
+    <string name="renovo_ui_failed_reason_signature">file is from a different publisher</string>
+    <string name="renovo_ui_failed_reason_storage">not enough free space</string>
+    <string name="renovo_ui_failed_reason_rejected">the system rejected the install</string>
+    <string name="renovo_ui_failed_reason_cancelled">the install was cancelled</string>
+    <string name="renovo_ui_failed_reason_parse">the version information could not be read</string>
+    <string name="renovo_ui_failed_reason_not_newer">the downloaded version is not newer</string>
+    <string name="renovo_ui_close">Close</string>
+    <string name="renovo_ui_try_again">Try again</string>
+
+    <!-- 2.7 Unsupported device -->
+    <string name="renovo_ui_unsupported_body">This device does not allow the app to update itself. Ask the person who installed the app for the new version.</string>
+</resources>
