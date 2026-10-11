@@ -39,3 +39,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Findings of the emulator acceptance run: the forced update screen sets its status and navigation bar icons to suit its own background, its permission state now fits without scrolling on a 411 x 731 dp phone, and an installer "aborted" status is reported as success when the new version is already installed.
 - The forced update screen names Wi-Fi in its waiting note only when `forcedDownloadNetwork` is `Network.UnmeteredOnly`. For `NotRoaming` and `Any` it now says it is waiting for a network.
 - The update UI asks `canInstallNow` again whenever the activity resumes, so the "Ready to install" dialog appears once the host app allows it instead of at some later recomposition.
+- A download the user cancels from its notification goes back to "update available" instead of a failure, and the next check no longer starts it again; `startDownload()` restarts it.
+- A failure while abandoning an installer session no longer leaves the installer busy until the app restarts.
+- The `size` in the version file no longer decides anything: a wrong value can no longer fail a download for lack of space, finish a cut-off file, or throw away a finished one.
+- A deferred install confirmation now opens on the next activity resume, so it also appears after a system dialog closes, without leaving the app.
+- `Renovo.init` does nothing outside the host app's main process, so a `:remote` process no longer builds a second engine that overwrites the stored state.

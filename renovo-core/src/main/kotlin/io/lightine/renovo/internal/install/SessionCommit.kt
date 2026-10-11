@@ -51,7 +51,10 @@ internal fun abandonQuietly(
 ) {
     try {
         context.packageManager.packageInstaller.abandonSession(sessionId)
-    } catch (e: SecurityException) {
-        // The session is already finalized or gone; there is nothing left to clean up.
+    } catch (e: RuntimeException) {
+        // A SecurityException means the session is already finalized or gone, so there is nothing
+        // left to clean up. A dead system server throws other runtime exceptions. This runs in failure
+        // paths before the installer releases its busy flag, so nothing may escape: an exception here
+        // would leave the installer busy and refuse every later install in this process.
     }
 }

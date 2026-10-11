@@ -120,6 +120,8 @@ internal class FakeRuntime(
             override val resumedActivity: Activity? = null
 
             override fun onForeground(callback: () -> Unit) = Unit
+
+            override fun onResumed(callback: () -> Unit) = Unit
         }
 
     override fun addListener(listener: UpdateListener) = Unit
@@ -145,6 +147,8 @@ internal class FakeForegroundTracker(
     override val resumedActivity: Activity? = null
 
     override fun onForeground(callback: () -> Unit) = Unit
+
+    override fun onResumed(callback: () -> Unit) = Unit
 }
 
 /** A clock the test moves by hand. */

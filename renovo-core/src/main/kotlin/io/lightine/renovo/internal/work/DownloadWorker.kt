@@ -68,8 +68,10 @@ internal class DownloadWorker(
         if (files.ensureDirectory()) files.deleteOtherVersions(input.versionCode)
 
         val finished = files.apk(input.versionCode)
-        if (finished.isFile && (input.size == null || finished.length() == input.size)) {
-            // The same version is never downloaded twice.
+        if (finished.isFile) {
+            // The same version is never downloaded twice. Its length is not compared with the size in the
+            // version file: that is a display hint and may be wrong. The verifier's hash and signature
+            // checks decide whether the file is good.
             events.send(EngineEvent.DownloadFinished(input.versionCode, finished.path))
             return Result.success()
         }

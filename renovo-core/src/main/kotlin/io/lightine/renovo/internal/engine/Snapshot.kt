@@ -22,14 +22,14 @@ internal data class Snapshot(
     /** Version code that the user allowed to download with mobile data, once. */
     val mobileDataVersionCode: Long? = null,
     /**
-     * A file that failed verification. The same file is not downloaded again automatically, so a
-     * broken release does not cost a full download at every check; a user retry clears it.
+     * A file that failed verification, or a download the user cancelled. The same file is not
+     * downloaded again automatically, so a broken release does not cost a full download at every
+     * check and a cancel is not undone by the next check. A failed file stays failed and a cancelled
+     * one stays offered; a download the user starts clears it.
      */
     val rejected: Rejection? = null,
     /** Installed version code at the moment the device was found unable to install. */
     val unsupportedAtVersionCode: Long? = null,
-    /** Installed version code seen at the last start. A change means an update was installed. */
-    val lastInstalledVersionCode: Long? = null,
 )
 
 /**
@@ -43,7 +43,7 @@ internal data class DownloadRecord(
     val verified: Boolean = false,
 )
 
-/** A downloaded file of [info] that failed verification with [reason]. */
+/** A downloaded file of [info] that failed verification with [reason], or its download cancelled by the user. */
 internal data class Rejection(
     val info: UpdateInfo,
     val reason: FailureReason,

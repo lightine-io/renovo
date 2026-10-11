@@ -202,6 +202,40 @@ class InstallStatusHandlerTest {
     }
 
     @Test
+    fun `pending user action while the app is started but paused waits for the next resume`() {
+        // A system dialog over the app: still in the foreground, but no activity is resumed.
+        val foreground = FakeForeground(resumedActivity = null, isInForeground = true)
+
+        handler(foreground).handle(status(PackageInstaller.STATUS_PENDING_USER_ACTION).putExtra(Intent.EXTRA_INTENT, confirmation))
+        assertTrue(sink.events.isEmpty())
+
+        // The dialog closes and the activity resumes; the app never went to the background.
+        val activity = resumedActivity()
+        foreground.resume(activity)
+
+        assertEquals(confirmation.action, shadowOf(activity).nextStartedActivity?.action)
+        assertEquals(SESSION, sessions.openSessionId)
+    }
+
+    @Test
+    fun `a confirmation that arrives under a dialog is launched on the resume, with the real tracker`() {
+        val tracker = ActivityForegroundTracker(context as Application)
+        val controller = Robolectric.buildActivity(Activity::class.java).setup()
+        // Paused, not stopped: the app stays in the foreground.
+        controller.pause()
+        val handler = InstallStatusHandler(context, sink, logger, tracker, sessions)
+
+        handler.handle(status(PackageInstaller.STATUS_PENDING_USER_ACTION).putExtra(Intent.EXTRA_INTENT, confirmation))
+        assertTrue(tracker.isInForeground)
+        assertNull(shadowOf(controller.get()).nextStartedActivity)
+
+        controller.resume()
+
+        assertEquals(confirmation.action, shadowOf(controller.get()).nextStartedActivity?.action)
+        assertEquals(SESSION, sessions.openSessionId)
+    }
+
+    @Test
     fun `a deferred confirmation is withdrawn when the app is not ready to install any more`() {
         var safe = true
         val foreground = FakeForeground()

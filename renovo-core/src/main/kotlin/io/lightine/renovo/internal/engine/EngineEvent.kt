@@ -120,7 +120,4 @@ internal sealed interface EngineEvent {
 
     /** User action: [io.lightine.renovo.Renovo.useMobileDataOnce]. */
     data object UseMobileDataOnce : EngineEvent
-
-    /** User action: "Try again" after a failure. */
-    data object Retry : EngineEvent
 }

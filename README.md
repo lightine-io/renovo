@@ -288,7 +288,7 @@ Renovo.removeListener(listener)
 | `NotNewer` | The downloaded file is not newer than the installed version. |
 | `Storage` | Not enough free space, or the file could not be written or read. |
 | `InstallRejected` | The system rejected the install. |
-| `Cancelled` | The user cancelled the install. |
+| `Cancelled` | The user cancelled the install. A download the user cancels from its notification is not a failure: the update goes back to "update available" (`Available`, or `Required` waiting for the user), it is not downloaded again by itself, and `startDownload()` restarts it. |
 
 ### Forced updates and `UpdateStep`
 
@@ -541,14 +541,7 @@ What it means for you:
 
 `renovo-core` depends on WorkManager, `androidx.core`, and kotlinx.coroutines, which most apps already have. `renovo-ui` adds Jetpack Compose, Material 3, `androidx.activity`, and the Compose window size libraries.
 
-**Call `Renovo.init` in the main process only.** `Application.onCreate` runs in every process of the host app, such as a `:remote` service or a crash reporter. Each process would build its own Renovo and write to the same stored state, and the processes would overwrite each other's records. If the host app has more than one process, check the name:
-
-```kotlin
-val me = getSystemService(ActivityManager::class.java).runningAppProcesses?.firstOrNull { it.pid == Process.myPid() }
-if (me?.processName == packageName) Renovo.init(this) { versionUrl = "https://example.com/app/version.json" }
-```
-
-On Android 9 and later, `Application.getProcessName() == packageName` does the same.
+**Renovo runs in the main process only.** `Application.onCreate` runs in every process of the host app, such as a `:remote` service or a crash reporter. `Renovo.init` checks the process name itself and does nothing outside the main process (the one named after the package), so you can call it unconditionally. In the other processes the other `Renovo` members throw `IllegalStateException`.
 
 ## Versioning, changelog, license
 

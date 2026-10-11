@@ -209,6 +209,16 @@ class SessionInstallerTest {
     }
 
     @Test
+    @Config(shadows = [DeadSystemServerPackageInstaller::class])
+    fun `a dead system server while abandoning the session still releases the claim`() {
+        installer().install(apk(), info)
+
+        assertEquals(listOf(EngineEvent.InstallFinished(InstallResult.Rejected)), sink.events)
+        assertNull(sessions.openSessionId)
+        assertTrue("the next install must be able to run", sessions.tryBegin())
+    }
+
+    @Test
     fun `an executor that refuses the work does not leave the install claimed`() {
         installer(stagingExecutor = { throw java.util.concurrent.RejectedExecutionException("shut down") }).install(apk(), info)
 
@@ -229,6 +239,16 @@ class BrokenCreatePackageInstaller : ShadowPackageInstaller() {
 class BrokenOpenPackageInstaller : ShadowPackageInstaller() {
     @Implementation
     override fun openSession(sessionId: Int): PackageInstaller.Session = throw IllegalStateException("The system server is not available.")
+}
+
+/** Creates the session, then fails to open it and to abandon it, as a system server that died in between. */
+@Implements(PackageInstaller::class)
+class DeadSystemServerPackageInstaller : ShadowPackageInstaller() {
+    @Implementation
+    override fun openSession(sessionId: Int): PackageInstaller.Session = throw IllegalStateException("The system server is not available.")
+
+    @Implementation
+    override fun abandonSession(sessionId: Int): Unit = throw IllegalStateException("The system server is not available.")
 }
 
 /** A session whose commit fails with an unexpected exception. */

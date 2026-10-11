@@ -22,7 +22,6 @@ import io.lightine.renovo.internal.engine.EngineEvent.InstallNotAllowedNow
 import io.lightine.renovo.internal.engine.EngineEvent.InstallStarted
 import io.lightine.renovo.internal.engine.EngineEvent.PermissionGranted
 import io.lightine.renovo.internal.engine.EngineEvent.PermissionNeeded
-import io.lightine.renovo.internal.engine.EngineEvent.Retry
 import io.lightine.renovo.internal.engine.EngineEvent.StartDownload
 import io.lightine.renovo.internal.engine.EngineEvent.Submit
 import io.lightine.renovo.internal.engine.EngineEvent.UseMobileDataOnce
@@ -218,7 +217,6 @@ class UpdateEngineTransitionTest(
                 UpdateState.Available(O),
             ),
             row("Available + InstallIfReady -> Available (nothing ready)", MANUAL, available, InstallIfReady, UpdateState.Available(O)),
-            row("Available + Retry -> Available (nothing failed)", MANUAL, available, Retry, UpdateState.Available(O)),
             row(
                 "Available + CheckSucceeded(older) -> UpToDate",
                 MANUAL,
@@ -466,10 +464,10 @@ class UpdateEngineTransitionTest(
             row("Installing + CheckSucceeded(same) -> Installing", AUTO, installing, found(O), UpdateState.Installing(O)),
             // ---- Failed ----
             row(
-                "Failed(check, shown) + Retry -> Failed, starts a user check",
+                "Failed(check, shown) + StartDownload -> Failed, starts a user check",
                 AUTO,
                 listOf(CheckStarted(true), CheckFailed(FailureReason.Network)),
-                Retry,
+                StartDownload,
                 UpdateState.Failed(FailureReason.Network, null, true),
                 Effect.StartCheck(true),
             ),
@@ -493,14 +491,6 @@ class UpdateEngineTransitionTest(
                 listOf(CheckStarted(true), CheckFailed(FailureReason.Network)),
                 found(O),
                 UpdateState.Available(O),
-            ),
-            row(
-                "Failed(download) + Retry -> Downloading (user)",
-                AUTO,
-                downloadingBackground + DownloadFailed(11, FailureReason.Network),
-                Retry,
-                UpdateState.Downloading(O, START, userInitiated = true),
-                Effect.EnqueueDownload(O, Network.Any, true),
             ),
             row(
                 "Failed(download) + StartDownload -> Downloading (user)",
@@ -527,10 +517,10 @@ class UpdateEngineTransitionTest(
                 Effect.EnqueueDownload(O, Network.Any, true),
             ),
             row(
-                "Failed(Cancelled) + Retry -> Failed, installs the kept file",
+                "Failed(Cancelled) + StartDownload -> Failed, installs the kept file",
                 AUTO,
                 installCancelled,
-                Retry,
+                StartDownload,
                 UpdateState.Failed(FailureReason.Cancelled, O, true),
                 Effect.Install(PATH, O),
             ),
@@ -545,7 +535,7 @@ class UpdateEngineTransitionTest(
             row(
                 "Failed(Cancelled) + InstallStarted -> Installing",
                 AUTO,
-                installCancelled + Retry,
+                installCancelled + StartDownload,
                 InstallStarted,
                 UpdateState.Installing(O),
             ),
@@ -750,18 +740,18 @@ class UpdateEngineTransitionTest(
                 Effect.CancelReadyNotification,
             ),
             row(
-                "Required(Failed) + Retry -> Required(Downloading)",
+                "Required(Failed) + StartDownload -> Required(Downloading)",
                 AUTO,
                 listOf(found(F), DownloadFailed(11, FailureReason.Network)),
-                Retry,
+                StartDownload,
                 UpdateState.Required(F, UpdateStep.Downloading(START)),
                 Effect.EnqueueDownload(F, Network.Any, true),
             ),
             row(
-                "Required(Failed(Cancelled)) + Retry -> installs the kept file",
+                "Required(Failed(Cancelled)) + StartDownload -> installs the kept file",
                 AUTO,
                 forcedInstalling + InstallFinished(InstallResult.Cancelled),
-                Retry,
+                StartDownload,
                 UpdateState.Required(F, UpdateStep.Failed(FailureReason.Cancelled)),
                 Effect.Install(PATH, F),
             ),

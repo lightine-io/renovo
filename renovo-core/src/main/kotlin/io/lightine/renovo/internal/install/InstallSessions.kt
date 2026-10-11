@@ -79,7 +79,7 @@ internal class InstallSessions {
         }
     }
 
-    /** Keeps the system confirmation until the app is in the foreground again. */
+    /** Keeps the system confirmation until the next activity resume. */
     fun deferConfirmation(confirmation: Intent) {
         synchronized(lock) { deferredConfirmation = confirmation }
     }

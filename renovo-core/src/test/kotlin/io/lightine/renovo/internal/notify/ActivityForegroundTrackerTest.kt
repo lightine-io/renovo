@@ -150,6 +150,34 @@ class ActivityForegroundTrackerTest {
     }
 
     @Test
+    fun `a resume after a pause without a stop runs the resume callbacks, not the foreground ones`() {
+        // A system dialog over the app pauses the activity and does not stop it.
+        val controller = newActivity().start().resume()
+        val seen = mutableListOf<Activity?>()
+        tracker.onResumed { seen += tracker.resumedActivity }
+
+        controller.pause()
+        controller.resume()
+
+        assertEquals(listOf<Activity?>(controller.get()), seen)
+        assertEquals("The app never left the foreground", 1, foregroundCalls)
+    }
+
+    @Test
+    fun `the resume callbacks run on every resume, also the one that brings the app back`() {
+        var resumes = 0
+        tracker.onResumed { resumes++ }
+        tracker.onResumed { error("callback failure") }
+        val controller = newActivity().start().resume()
+
+        controller.pause().stop()
+        controller.restart().start().resume()
+
+        assertEquals(2, resumes)
+        assertEquals(2, foregroundCalls)
+    }
+
+    @Test
     fun `every registered callback runs and a failing one does not block the others`() {
         var second = 0
         tracker.onForeground { error("callback failure") }

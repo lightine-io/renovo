@@ -86,7 +86,6 @@ internal class UpdateEngine(
             EngineEvent.StartDownload -> onStartDownload()
             EngineEvent.InstallIfReady -> onInstallIfReady()
             EngineEvent.UseMobileDataOnce -> onUseMobileDataOnce()
-            EngineEvent.Retry -> retry()
         }
     }
 
@@ -132,7 +131,7 @@ internal class UpdateEngine(
         if (restoredSnapshot.mobileDataVersionCode.let { it != null && it <= installed }) {
             restoredSnapshot = restoredSnapshot.copy(mobileDataVersionCode = null)
         }
-        snapshot = restoredSnapshot.copy(lastInstalledVersionCode = installed)
+        snapshot = restoredSnapshot
 
         model = if (isUnsupported()) Model.Unsupported(null) else Model.Idle
         // A forced update must block again right away, even when the device is offline now.
@@ -232,7 +231,9 @@ internal class UpdateEngine(
         val rejection = snapshot.rejected
         if (rejection != null) {
             if (sameFile(rejection.info, info)) {
-                model = Model.Working(info, existingStage ?: Stage.Failed(rejection.reason, userInitiated = false))
+                // A cancelled download stays offered for the user to start; a broken file stays failed.
+                val remembered = if (rejection.reason == FailureReason.Cancelled) Stage.Offered else Stage.Failed(rejection.reason, userInitiated = false)
+                model = Model.Working(info, existingStage ?: remembered)
                 return
             }
             snapshot = snapshot.copy(rejected = null)
@@ -271,7 +272,9 @@ internal class UpdateEngine(
         info: UpdateInfo,
         userInitiated: Boolean,
     ) {
-        snapshot = snapshot.copy(download = DownloadRecord(info))
+        // A download that starts is wanted, so no earlier rejection of this file may hold it back. The
+        // other callers have cleared it already; a start from Offered after a cancel has not.
+        snapshot = snapshot.copy(download = DownloadRecord(info), rejected = null)
         downloadUserInitiated = userInitiated
         emit(Effect.EnqueueDownload(info, networkFor(info), userInitiated))
         model = Model.Working(info, Stage.Downloading(DownloadProgress(0, info.size)))
@@ -324,6 +327,15 @@ internal class UpdateEngine(
     ) {
         val working = runningDownload(versionCode) ?: return log("Ignored a stale download failure for version $versionCode.")
         // The partial file stays with the downloader, so the next attempt resumes instead of starting over.
+        if (reason == FailureReason.Cancelled) {
+            // A cancel from the notification means "not now", not a failure. The update goes back to
+            // offered, so the user can still start it later, and the cancel is remembered like a
+            // rejected file, so the next check or start does not download it again by itself.
+            snapshot = snapshot.copy(download = null, rejected = Rejection(working.info, reason))
+            downloadUserInitiated = false
+            model = working.copy(stage = Stage.Offered)
+            return
+        }
         snapshot = snapshot.copy(download = null)
         model = working.copy(stage = Stage.Failed(reason, downloadUserInitiated))
     }
@@ -439,7 +451,6 @@ internal class UpdateEngine(
                         rejected = null,
                         mobileDataVersionCode = null,
                         unsupportedAtVersionCode = null,
-                        lastInstalledVersionCode = installed,
                     )
                 downloadUserInitiated = false
                 model = Model.UpToDate
