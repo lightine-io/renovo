@@ -1,3 +1,8 @@
+public final class io/lightine/renovo/ui/AttachUiKt {
+	public static final fun attachUi (Lio/lightine/renovo/Renovo;Landroidx/activity/ComponentActivity;Lio/lightine/renovo/ui/RenovoColorSchemes;)V
+	public static synthetic fun attachUi$default (Lio/lightine/renovo/Renovo;Landroidx/activity/ComponentActivity;Lio/lightine/renovo/ui/RenovoColorSchemes;ILjava/lang/Object;)V
+}
+
 public final class io/lightine/renovo/ui/RenovoColorSchemes {
 	public static final field $stable I
 	public fun <init> (Landroidx/compose/material3/ColorScheme;Landroidx/compose/material3/ColorScheme;)V
@@ -6,5 +11,9 @@ public final class io/lightine/renovo/ui/RenovoColorSchemes {
 	public final fun getLight ()Landroidx/compose/material3/ColorScheme;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/lightine/renovo/ui/RenovoUpdateHostKt {
+	public static final fun RenovoUpdateHost (Lio/lightine/renovo/ui/RenovoColorSchemes;Lkotlin/jvm/functions/Function2;Landroidx/compose/runtime/Composer;II)V
 }
 

@@ -24,3 +24,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The forced update screen with its seven states and the one-column and two-column layouts, with previews and screenshots.
 - Notification icons a host app can replace: define a drawable named `renovo_ic_update_ready` (update ready notification) or `renovo_ic_download` (download progress) in the host app.
 - Hardening of the core: a worker that starts before `Renovo.init` retries instead of failing, an unexpected exception in a download or an install is reported to the engine instead of being lost, verification results are matched to their file, the version is checked as newer before it is compared with the announced one, and a host logger that throws can no longer drop an event.
+- The update UI entry points: `RenovoUpdateHost` for Compose host apps and `Renovo.attachUi` for the others, with the state-to-screen mapping, dismissals that survive rotation, and the one-window rule.

@@ -80,7 +80,8 @@ dependencies {
     api(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.window)
-    implementation(libs.androidx.activity.compose)
+    // Public API: Renovo.attachUi takes a ComponentActivity, so a host app compiles against the activity library.
+    api(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.savedstate)
 
