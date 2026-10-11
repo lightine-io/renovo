@@ -85,9 +85,10 @@ internal class ApkTransfer(
         val part = files.part(versionCode)
         val length = if (part.isFile) part.length() else 0L
         val validator = files.readValidator(versionCode)
-        // Without a validator the file cannot be checked against the server's, and a partial file
-        // longer than the whole file is stale. Both start over.
-        if (length > 0 && (validator == null || (expectedSize != null && length > expectedSize))) {
+        // Without a validator the file cannot be checked against the server's, so it starts over.
+        // The size in the version file is not compared: it is a display hint and may be wrong, and
+        // the server already answers a stale partial file with a 416 or a full 200.
+        if (length > 0 && validator == null) {
             files.deletePartial(versionCode)
             return ResumePoint(0, null)
         }

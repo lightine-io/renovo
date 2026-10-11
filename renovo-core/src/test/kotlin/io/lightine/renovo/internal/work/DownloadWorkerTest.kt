@@ -117,6 +117,35 @@ internal class DownloadWorkerTest : WorkTestBase() {
     }
 
     @Test
+    fun `a size in the version file that is too small does not throw away the bytes already on disk`() {
+        // The publisher rebuilt the APK and forgot to update "size". The hash still decides validity.
+        val wrongSize = (body.size / 4).toLong()
+        val cut = body.size / 2
+        val server = serve(cutOnFirst = cut)
+
+        assertEquals(ListenableWorker.Result.retry(), run(input(size = wrongSize)))
+        assertEquals(cut.toLong(), files.part(11).length())
+
+        val second = run(input(size = wrongSize), attempt = 1)
+
+        assertEquals(ListenableWorker.Result.success(), second)
+        assertArrayEquals(body, files.apk(11).readBytes())
+        assertEquals("FR-7: the second run resumes", "bytes=$cut-", server.requests[1].headers["range"])
+    }
+
+    @Test
+    fun `an empty file on the server is finished and left to the verifier`() {
+        // A release uploaded as a 0-byte file. The engine must hear an outcome; the verifier rejects the file.
+        serve(FileServerBehavior(ByteArray(0)))
+
+        val result = run(input(size = null))
+
+        assertEquals(ListenableWorker.Result.success(), result)
+        assertEquals(0L, files.apk(11).length())
+        assertEquals(EngineEvent.DownloadFinished(11, files.apk(11).path), sink.events.last())
+    }
+
+    @Test
     fun `a 200 to a range request starts over`() {
         // The file on the server changed: its ETag differs, so If-Range fails and the server sends all of it.
         writePartial(11, ByteArray(1000) { 9 }, validator = "\"old\"")
