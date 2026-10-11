@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,7 +64,9 @@ internal fun StepTile(
     Box(
         modifier =
         modifier
-            .size(STEP_TILE_SIZE)
+            // A minimum, not a fixed size: at a large font scale the number is taller than 32 dp,
+            // and a fixed tile would cut it off.
+            .defaultMinSize(minWidth = STEP_TILE_SIZE, minHeight = STEP_TILE_SIZE)
             .background(MaterialTheme.colorScheme.primaryContainer, STEP_TILE_SHAPE),
         contentAlignment = Alignment.Center,
     ) {

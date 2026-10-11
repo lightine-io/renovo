@@ -26,10 +26,13 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.ForcedUpdateShape
 import io.lightine.renovo.ui.WindowWidth
+import io.lightine.renovo.ui.dialogs.LocalRenovoDialogInline
 import io.lightine.renovo.ui.rememberWindowWidth
 
 /**
@@ -132,6 +135,44 @@ internal fun ForcedUpdateScreen(
             }
         }
     }
+}
+
+/**
+ * The window of the forced update screen: a full-screen dialog window that cannot be dismissed.
+ *
+ * A screen drawn over the host app in the host's own window blocks touches, but the keyboard focus
+ * and a screen reader can still move into the host content underneath, in both entry points. A
+ * dialog window of its own is modal: it takes the input focus from the host window, and TalkBack
+ * stays inside it. It also covers `attachUi`, where the host's screen is made of views that a
+ * Compose modifier cannot reach. Back, Escape, and a tap outside do nothing, because no dismissal
+ * is allowed.
+ *
+ * Previews and screenshot tests set [LocalRenovoDialogInline], and then [content] is drawn in place,
+ * because a second window is not captured with the screen.
+ *
+ * ```
+ * ForcedUpdateWindow { ForcedUpdateScreen(...) }
+ * ```
+ */
+@Composable
+internal fun ForcedUpdateWindow(content: @Composable () -> Unit) {
+    if (LocalRenovoDialogInline.current) {
+        content()
+        return
+    }
+    Dialog(
+        onDismissRequest = {},
+        properties =
+        DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false,
+            // The platform width would leave the host app visible beside the screen.
+            usePlatformDefaultWidth = false,
+            // The window spans the whole display; the screen keeps its content clear of the bars itself.
+            decorFitsSystemWindows = false,
+        ),
+        content = content,
+    )
 }
 
 // The shape is smaller while the permission steps are shown, so the steps, the switch, and the

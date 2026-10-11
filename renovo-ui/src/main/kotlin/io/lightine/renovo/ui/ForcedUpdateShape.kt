@@ -63,5 +63,7 @@ private const val CORNER_RATIO = 0.3f
 // 2 * r * (sqrt(2) - 1) with r = CORNER_RATIO. The side is the shape size divided by this.
 private val SIDE_DIVISOR = (sqrt(2.0) - 2.0 * CORNER_RATIO * (sqrt(2.0) - 1.0)).toFloat()
 
-// The mockups draw the icon at a quarter of the shape.
-private const val ICON_RATIO = 0.25f
+// Size of the icon box as a share of the shape. The download glyph fills only two thirds of the
+// height of its box, so at this ratio the glyph is about 28 percent of the shape tall, as in the
+// mockups. A quarter for the box drew the glyph at half the size of the mockups.
+private const val ICON_RATIO = 0.42f

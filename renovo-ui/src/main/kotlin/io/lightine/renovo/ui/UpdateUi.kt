@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.text.format.Formatter
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +24,7 @@ import io.lightine.renovo.ui.dialogs.ReadyToInstallDialog
 import io.lightine.renovo.ui.dialogs.UpdateAvailableDialog
 import io.lightine.renovo.ui.dialogs.UpdateFailedDialog
 import io.lightine.renovo.ui.forced.ForcedUpdateScreen
+import io.lightine.renovo.ui.forced.ForcedUpdateWindow
 
 /**
  * What the update UI can ask `Renovo` to do. A parameter instead of a direct call, so a test can
@@ -59,10 +61,13 @@ internal class UpdateUiActions(
  * | everything else | nothing |
  *
  * "Later", "Not now", and "Cancel" last until the next app start, so [dismissed] keeps them for
- * the process. Every choice, and "Hide" and "Close", is also saved with the screen, so a rotation,
- * a resize, or a fold never brings back what the user put away (technical specification section 8).
- * The saved values sit in the branch of their state, so they are dropped when the state moves on:
- * a second download or a second failure shows its dialog again.
+ * the process. "Hide" and "Close" last for their download or failure, and [dismissed] keeps them
+ * for the process too, so a second activity does not show them again. Every choice is also saved
+ * with the screen, so a rotation, a resize, or a fold never brings back what the user put away
+ * (technical specification section 8). The saved values sit in the branch of their state, so they
+ * are dropped when the state moves on: a second download or a second failure shows its dialog
+ * again. "Hide" is the exception: it is kept while the same download waits for a network and goes
+ * on, and dropped when it ends.
  *
  * All the branches stay in the composition while [active] is false, and only the screens are left
  * out. A host that is paused, because another window took over or a system screen is in front,
@@ -90,17 +95,33 @@ internal fun UpdateUi(
     legacyPermissionStep: Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.O,
     dismissed: DismissedUpdates = DismissedUpdates.process,
 ) {
+    // "Hide" lasts for the whole download. A download can wait for a network halfway and then go
+    // on, so the choice is kept above the branches, under the version of the running download. It
+    // is dropped when no download runs, so the next download shows its dialog again.
+    var downloadHidden by rememberSaveable(state.downloadVersionCode()) { mutableStateOf(false) }
+    // "Hide" and "Close" are also kept for the process, until their download or failure is over.
+    SideEffect { dismissed.follow(state) }
+
     // No else branch: a new state does not compile until someone decides what it shows.
     when (state) {
         is UpdateState.Available -> AvailableUi(state.info, active, actions, dismissed)
 
-        is UpdateState.Downloading -> DownloadingUi(state.info, state.progress, state.userInitiated, active)
+        is UpdateState.Downloading -> DownloadingUi(
+            progress = state.progress,
+            userInitiated = state.userInitiated,
+            active = active,
+            hidden = downloadHidden || dismissed.isDismissed(Dismissal.Hidden, state.info.versionCode),
+            onHide = {
+                downloadHidden = true
+                dismissed.dismiss(Dismissal.Hidden, state.info.versionCode)
+            },
+        )
 
         is UpdateState.ReadyToInstall -> ReadyToInstallUi(state.info, canInstallNow, active, actions, dismissed)
 
         is UpdateState.PermissionNeeded -> PermissionUi(state.info, legacyPermissionStep, active, actions, dismissed)
 
-        is UpdateState.Failed -> FailedUi(state.reason, state.info, state.userInitiated, active, actions)
+        is UpdateState.Failed -> FailedUi(state.reason, state.info, state.userInitiated, active, actions, dismissed)
 
         is UpdateState.Required -> if (active) {
             RequiredUi(state.info, state.step, isOnline, installedVersionName, legacyPermissionStep, actions)
@@ -141,17 +162,22 @@ private fun AvailableUi(
 
 @Composable
 private fun DownloadingUi(
-    info: UpdateInfo,
     progress: DownloadProgress,
     userInitiated: Boolean,
     active: Boolean,
+    hidden: Boolean,
+    onHide: () -> Unit,
 ) {
-    // Hiding lasts for this download only. It has no process-wide copy, because the dialog is a
-    // progress view, not a question, and the spec ties it to the download the user started.
-    var hidden by rememberSaveable(info.versionCode) { mutableStateOf(false) }
     // A download that no user action started shows nothing (UI specification 2.2).
     if (!userInitiated || !active || hidden) return
-    DownloadingDialog(progress = progress, onHide = { hidden = true })
+    DownloadingDialog(progress = progress, onHide = onHide)
+}
+
+/** The version of the download that runs or waits for a network, or null when no download is under way. */
+internal fun UpdateState.downloadVersionCode(): Long? = when (this) {
+    is UpdateState.Downloading -> info.versionCode
+    is UpdateState.WaitingForNetwork -> info.versionCode
+    else -> null
 }
 
 @Composable
@@ -206,14 +232,19 @@ private fun FailedUi(
     userInitiated: Boolean,
     active: Boolean,
     actions: UpdateUiActions,
+    dismissed: DismissedUpdates,
 ) {
+    val code = info?.versionCode ?: DismissedUpdates.NO_VERSION
     // A different failure is a new message, so it opens the dialog again even in the same branch.
     var closed by rememberSaveable(reason, info?.versionCode) { mutableStateOf(false) }
     // A failed background check shows nothing (UI specification 2.6).
-    if (!userInitiated || !active || closed) return
+    if (!userInitiated || !active || closed || dismissed.isDismissed(Dismissal.Closed, code)) return
     UpdateFailedDialog(
         reason = reason,
-        onClose = { closed = true },
+        onClose = {
+            closed = true
+            dismissed.dismiss(Dismissal.Closed, code)
+        },
         // Without version information the failure came from a check, so the retry is a check.
         onTryAgain = if (info != null) actions.startDownload else actions.checkNow,
     )
@@ -228,17 +259,20 @@ private fun RequiredUi(
     legacyPermissionStep: Boolean,
     actions: UpdateUiActions,
 ) {
-    ForcedUpdateScreen(
-        info = info,
-        installedVersionName = installedVersionName ?: rememberInstalledVersionName(),
-        step = step,
-        isOnline = isOnline ?: rememberIsOnline(),
-        legacyPermissionStep = legacyPermissionStep,
-        onUpdateNow = actions.startDownload,
-        onTryAgain = actions.startDownload,
-        onOpenSettings = actions.installIfReady,
-        onUseMobileData = actions.useMobileDataOnce,
-    )
+    // Its own window, so neither the keyboard focus nor a screen reader can reach the host app underneath.
+    ForcedUpdateWindow {
+        ForcedUpdateScreen(
+            info = info,
+            installedVersionName = installedVersionName ?: rememberInstalledVersionName(),
+            step = step,
+            isOnline = isOnline ?: rememberIsOnline(),
+            legacyPermissionStep = legacyPermissionStep,
+            onUpdateNow = actions.startDownload,
+            onTryAgain = actions.startDownload,
+            onOpenSettings = actions.installIfReady,
+            onUseMobileData = actions.useMobileDataOnce,
+        )
+    }
 }
 
 // formatShortFileSize turns bytes into "24 MB" in the device's language.

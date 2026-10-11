@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -31,9 +32,11 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import io.lightine.renovo.ui.WindowWidth
 import io.lightine.renovo.ui.rememberWindowWidth
 
@@ -109,8 +112,23 @@ internal fun RenovoDialog(
             dismissOnBackPress = dismissible,
             dismissOnClickOutside = dismissible,
         ),
-        content = frame,
-    )
+    ) {
+        MaterialScrimDim()
+        frame()
+    }
+}
+
+/**
+ * Sets the dim behind the dialog window to the Material scrim: the `scrim` role at 32 percent
+ * (UI specification part 1). DialogProperties has no stable setting for it, so the dim amount is
+ * set on the window's attributes. The platform always dims with black, which is the color of the
+ * baseline scrim, so only the opacity of the role can be followed.
+ */
+@Composable
+private fun MaterialScrimDim() {
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+    val amount = MaterialTheme.colorScheme.scrim.alpha * SCRIM_OPACITY
+    SideEffect { window?.setDimAmount(amount) }
 }
 
 @Composable
@@ -215,3 +233,6 @@ private val COMPACT_MARGIN = 24.dp
 private val VERTICAL_MARGIN = 24.dp
 private val MEDIUM_WIDTH = 440.dp
 private val EXPANDED_MAX_WIDTH = 560.dp
+
+// The opacity of the Material 3 scrim behind a dialog.
+private const val SCRIM_OPACITY = 0.32f
