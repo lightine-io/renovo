@@ -4,205 +4,57 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![check](https://github.com/lightine-io/renovo/actions/workflows/check.yml/badge.svg)](https://github.com/lightine-io/renovo/actions/workflows/check.yml)
 
-Renovo is a Kotlin library for Android apps that are installed from an APK file, outside the Play Store. With Renovo, such an app checks for a new version, downloads it, verifies it, and installs it by itself. You need no server logic: a small JSON file on any HTTPS host, the version file, is enough. Renovo is **not** for apps on the Play Store, and it installs one complete APK, not split APKs or app bundles.
+Renovo is a Kotlin library that lets an Android app update itself: it checks for a new version, downloads the APK, verifies it, and installs it. It is made for apps that people install from an APK file, outside the Play Store. It is not for apps on the Play Store, and it does not update other apps.
 
-## Quick start
+In this guide, the **host app** is your app, the one that uses Renovo.
 
-**1. Add the dependency** to the app module's `build.gradle.kts`. Renovo is on Maven Central. `renovo-ui` brings `renovo-core` with it.
+## Is Renovo for you
+
+- **Yes**, if your app is installed from an APK file, for example from your website or a file share.
+- **Yes**, if you can put two files on an HTTPS server, or if your backend can tell the app which version is the latest.
+- **Yes**, if your app supports Android 7.0 (API 24) or later.
+- **No**, if your app is on the Play Store. Renovo adds the permission to install packages, and Play policy restricts it.
+- **No**, if you ship split APKs or app bundles. Renovo installs one complete APK. A universal APK works.
+- **No**, if you want to update other apps. Renovo updates the host app only.
+
+Renovo makes only two kinds of request: one for the version file and one for the APK. It sends no analytics.
+
+Building with another stack? More in the wiki: Other stacks.
+
+## Choose your path
+
+Pick the row that describes your app. Each path is a complete tutorial that you can follow from top to bottom.
+
+| Your situation | Go to |
+|---|---|
+| My app uses Jetpack Compose and I want ready-made update screens | [Path 1: Ready-made screens in a Compose app](#path-1-ready-made-screens-in-a-compose-app) |
+| My app uses XML layouts (Views) and I want ready-made update screens | [Path 2: Ready-made screens in an XML app](#path-2-ready-made-screens-in-an-xml-app) |
+| I want to draw my own update screens | [Path 3: Your own screens](#path-3-your-own-screens) |
+
+Every path ends with "Publish your first version file". The two ways to give Renovo the version information, a file on any HTTPS host or your own backend, are explained after the paths, in [Where the version information comes from](#where-the-version-information-comes-from).
+
+## Path 1: Ready-made screens in a Compose app
+
+Follow this path if your app draws its screens with Jetpack Compose. At the end, your app checks for updates by itself and shows ready-made update screens. In this guide these screens are called the **update UI**. You write about 20 lines of Kotlin and one small JSON file.
+
+You need an app with `minSdk` 24 or higher, `compileSdk` 37 or higher, Kotlin 2.4.0 or higher, and Java 17 or higher. You also need a place on the web that serves files over HTTPS.
+
+### Step 1. Add the dependency
+
+Renovo is on Maven Central. Add `renovo-ui` to your app module. It brings `renovo-core` with it. `renovo-core` checks, downloads, and installs. `renovo-ui` draws the screens.
 
 ```kotlin
+// app/build.gradle.kts
 dependencies {
     implementation("io.lightine.renovo:renovo-ui:0.1.0")
 }
 ```
 
-**2. Start Renovo and show the update UI**, the ready-made update screens. Two pieces of code: one in your `Application` class, one in your main activity.
+Check that `mavenCentral()` is listed under `repositories` in `settings.gradle.kts`. New Android Studio projects have it.
 
-```kotlin
-class App : Application() {
-    override fun onCreate() {
-        super.onCreate()
-        Renovo.init(this) { versionUrl = "https://example.com/app/version.json" }
-    }
-}
+### Step 2. Start Renovo
 
-// In MainActivity.onCreate, around your existing Compose content:
-setContent { AppTheme { RenovoUpdateHost { AppContent() } } }
-```
-
-The imports are `io.lightine.renovo.Renovo` and `io.lightine.renovo.ui.RenovoUpdateHost`. Register `App` in `AndroidManifest.xml` with `<application android:name=".App" ...>` if it is not there yet. No Compose in your app? See [Update UI in a Views app](#b-update-ui-in-a-views-or-appcompat-app).
-
-**3. Publish the version file** at that URL. It is a JSON document that describes the latest version. See [The version file](#the-version-file).
-
-What happens next: Renovo checks the version file when the app starts, and every six hours in the background. When a newer version exists, Renovo downloads the APK in the background, and an interrupted download resumes where it stopped. Renovo then verifies the file and shows a "Ready to install" dialog. The first time, Android asks the user to allow installs from your app, and the dialog explains how. If the version file marks the update as a forced update, one the user cannot postpone, a full screen blocks the app until the user installs it.
-
-## Contents
-
-- [Words used in this guide](#words-used-in-this-guide)
-- [How it works](#how-it-works)
-- [The version file](#the-version-file)
-- [Use cases](#use-cases)
-  - [a. Update UI in a Compose app](#a-update-ui-in-a-compose-app)
-  - [b. Update UI in a Views or AppCompat app](#b-update-ui-in-a-views-or-appcompat-app)
-  - [c. Your own screens, core only](#c-your-own-screens-core-only)
-  - [d. You already have a backend API](#d-you-already-have-a-backend-api)
-  - [e. You have no backend](#e-you-have-no-backend)
-  - [f. Authentication](#f-authentication)
-  - [g. Forced updates](#g-forced-updates)
-  - [h. Install timing, notifications, networks, logging](#h-install-timing-notifications-networks-logging)
-  - [i. Theming the update UI](#i-theming-the-update-ui)
-- [Settings reference](#settings-reference)
-- [Update state reference](#update-state-reference)
-- [What Renovo adds to your manifest](#what-renovo-adds-to-your-manifest)
-- [Behavior per Android version](#behavior-per-android-version)
-- [Known limits](#known-limits)
-- [Google developer verification](#google-developer-verification)
-- [Requirements](#requirements)
-- [Versioning, changelog, license](#versioning-changelog-license)
-
-## Words used in this guide
-
-- **Host app** - your app, the one that uses Renovo.
-- **Version file** - a small JSON document on your server that describes the latest version: its version code, its name, and where to download the APK.
-- **Forced update** - an update the user cannot postpone. The host app stays blocked until it is installed.
-- **Update UI** - the ready-made screens in the `renovo-ui` module: dialogs for optional updates and a full screen for forced updates.
-
-Renovo has two modules:
-
-| Module | What it has | Use it when |
-|---|---|---|
-| `renovo-core` | Checking, downloading, verifying, installing, and the update state. No screens. | You build your own screens. |
-| `renovo-ui` | The update UI, built with Jetpack Compose. Depends on `renovo-core`. | You want ready-made screens. Works in Compose apps and in apps without Compose. |
-
-## How it works
-
-```text
-  version file          APK file
-  (your HTTPS host)     (your HTTPS host)
-        |                     |
-        v                     v
-   1. CHECK  ------->  2. DOWNLOAD  ------->  3. VERIFY  ------->  4. INSTALL
-   newer version?      in the background,     hash, package,       Android's package
-                       resumes after a        version code,        installer, started
-                       broken connection      signing certificate  from the foreground
-```
-
-1. **Check.** Renovo reads the version file. It does this when the host app starts, every `checkInterval` in the background, and when you call `Renovo.checkNow()`. WorkManager, the Android library for background work, runs the background check. Renovo sends the ETag of the last answer (a tag the server attaches to one version of a file), so an unchanged file costs almost no data.
-2. **Download.** If the version code is higher than the installed one, Renovo downloads the APK into the host app's private storage. An interrupted download resumes where it stopped. The same version is never downloaded twice. Files of older versions are deleted.
-3. **Verify.** Before anything is installed, Renovo checks, in this order: the SHA-256 hash (when the version file gives one), the package name, the version code, and the signing certificate.
-4. **Install.** Renovo hands the APK to the Android package installer. Android shows its own confirmation unless it can skip it (see [Behavior per Android version](#behavior-per-android-version)). An install always starts while the host app is in the foreground, never from a background job. After the update, the new version deletes the downloaded file and schedules the next check.
-
-What Renovo guarantees:
-
-- **Same publisher.** Only an APK with the same package name and the same signing certificate as the installed app is installed. A compromised server cannot make Renovo install an APK from another publisher.
-- **Intact file.** When the version file has a `sha256`, a file with a different hash is never installed. A file that fails any check is deleted and reported with a specific reason.
-- **Never a downgrade.** Only a higher version code is accepted.
-- **Never at a bad moment.** Renovo asks your `canInstallNow` function right before every install. While it returns `false`, nothing is installed.
-- **Data is safe.** A failed or cancelled install leaves the current version running with its data. Migrating stored data between versions is the host app's job.
-- **Forced updates hold.** A device that skipped several releases and is below `minSupportedVersionCode` is still blocked.
-- **HTTPS only.** Renovo rejects a version file URL or APK URL that is not HTTPS, and a redirect away from HTTPS. The server needs a certificate that the device trusts.
-- **No data sent.** Renovo makes no request except the one for the version file and the one for the APK. It has no analytics.
-
-## The version file
-
-The version file is a JSON document on any HTTPS host. A static file is enough. Here is one with every field:
-
-```json
-{
-  "versionCode": 42,
-  "versionName": "1.8.0",
-  "apkUrl": "https://example.com/app/app-1.8.0.apk",
-  "sha256": "3b4c8f0e2a9d7c61e5f04b2a8d9c3e7f1a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d",
-  "size": 25165824,
-  "mandatory": false,
-  "minSupportedVersionCode": 38,
-  "releaseNotes": {
-    "az": "- Sinxronizasiya **sürətləndirildi**\n- Xətalar aradan qaldırıldı",
-    "en": "- Sync is **faster**\n- Bug fixes"
-  }
-}
-```
-
-Only the first three fields are required.
-
-| Field | Required | Meaning |
-|---|---|---|
-| `versionCode` | yes | Version code of the new APK, the same number as `versionCode` in its `build.gradle.kts`. A whole number of 1 or more. |
-| `versionName` | yes | Version name shown to the user. A string. |
-| `apkUrl` | yes | HTTPS URL of the APK. |
-| `sha256` | no | SHA-256 hash of the APK, 64 hexadecimal characters, upper or lower case. Checked when present. |
-| `size` | no | APK size in bytes. Used only for display, such as the download size and the progress. A positive number. |
-| `mandatory` | no, default `false` | `true` makes this update a forced update for every older installed version. |
-| `minSupportedVersionCode` | no | Installed versions below this version code get a forced update. Versions at or above it get an optional one. |
-| `releaseNotes` | no | One string for every language, or an object with one string per language code, such as `en` or `pt-BR`. |
-
-The rules:
-
-- **Release notes per language.** A key is a language code, optionally with a region, such as `pt` or `pt-BR`. Case does not matter, and `pt_BR` means the same as `pt-BR`. For a phone set to Brazilian Portuguese, Renovo picks `pt-BR`, then `pt`, then any other `pt-` key in file order, then `en` (or the first `en-` key when there is no plain `en`), then the first entry. A phone set to plain `pt` gets `pt`, or the first `pt-` key when there is no plain `pt`. A single string is used for every language.
-- **Which language counts.** The update UI uses the host app's language as its activity sees it, so a per-app language set on Android 13 and later is respected. The "Update ready" notification has no activity, so its texts come from the application context. On Android 12 and older, a language set only through AppCompat's per-app language support reaches activities, not the application context, so the notification may use the device language.
-- **Markdown subset.** Release notes may use `**bold**`, `*italic*`, lines that start with `- ` as bullets, `[text](https://...)` links, and line breaks. Everything else is shown as typed. Links open only if they are HTTPS.
-- **Unknown fields are ignored**, so the format can grow.
-- **A file that cannot be read** (broken JSON, a missing required field, a plain HTTP `apkUrl`, a file larger than 1 MiB or not in UTF-8) is a failed check, not a crash. Renovo tries again at the next check.
-- **HTTPS only**, for the version file and for the APK. The server may redirect, up to five times, as long as every step is HTTPS.
-- **Always raise `versionCode`.** Renovo only installs a higher version code than the installed one, and Android refuses anything else anyway.
-
-### Compute the hash and the size
-
-Add `sha256`. Without it, Renovo still checks the package name, the version code, and the signing certificate. The hash adds a check that the file is exactly the one you published.
-
-```sh
-# macOS
-shasum -a 256 app-release.apk     # sha256: the first word of the output
-wc -c < app-release.apk           # size in bytes
-
-# Linux
-sha256sum app-release.apk
-wc -c < app-release.apk
-```
-
-On Windows PowerShell, `Get-FileHash app-release.apk -Algorithm SHA256` prints the hash in capitals, which Renovo accepts, and `(Get-Item app-release.apk).Length` prints the size.
-
-### Host it
-
-Any server that serves files over HTTPS with a trusted certificate works. The APK and the version file can be on different hosts.
-
-- **A plain web server** or any static file hosting. Put `version.json` and the APK in one folder. Static file servers already send an ETag or a Last-Modified date and answer range requests, which Renovo uses to resume a download.
-- **An S3-style bucket**, meaning any object storage with an S3-compatible API. Make the two objects publicly readable, or put a CDN in front of the bucket, and use their HTTPS URLs. For a private bucket, see [Authentication](#f-authentication).
-- **GitHub Releases of a public repository.** Attach the APK and `version.json` to each release. Set `versionUrl` to `https://github.com/OWNER/REPO/releases/latest/download/version.json`, which always points to the newest release that is not a draft or a pre-release. In the file, set `apkUrl` to that release's APK, such as `https://github.com/OWNER/REPO/releases/download/v1.8.0/app-1.8.0.apk`. GitHub redirects both to its download host over HTTPS, sends an ETag, and answers range requests, so checks and resumed downloads work. Assets of a private repository need a token, and Renovo sends no headers with the APK request, so private repositories do not work.
-
-The `Content-Type` of the version file does not matter. Renovo reads the body as JSON.
-
-### Caching and ETag
-
-Renovo keeps the ETag of the last version file it read and sends it as `If-None-Match` on the next check. When the file has not changed, the server answers `304 Not Modified` with no body, and the check ends there. A server without ETags still works: Renovo then downloads the small file at every check.
-
-Renovo turns off the HTTP cache on the device, so what it sees is what your server or CDN sends. If a CDN caches `version.json`, give it a short cache time, for example `Cache-Control: max-age=300`, or clear the CDN cache after each release. Otherwise devices see the new version only when the cached copy expires.
-
-### Forced updates in the file
-
-There are two ways to make an update forced. Use whichever matches your rule.
-
-Force everyone onto version 42, for example after a security fix:
-
-```json
-{ "versionCode": 42, "versionName": "1.8.0", "apkUrl": "https://example.com/app/app-1.8.0.apk", "mandatory": true }
-```
-
-Force only very old versions. Here devices on 37 or lower must update, and devices on 38 to 41 get an optional update:
-
-```json
-{ "versionCode": 42, "versionName": "1.8.0", "apkUrl": "https://example.com/app/app-1.8.0.apk", "minSupportedVersionCode": 38 }
-```
-
-`minSupportedVersionCode` works even when `mandatory` is `false`. A device that skipped several releases is still blocked. What the user then sees is in [Forced updates](#g-forced-updates).
-
-## Use cases
-
-Each section below has complete code you can paste. Pick the ones that match your app.
-
-### a. Update UI in a Compose app
-
-Add the `renovo-ui` dependency from the [Quick start](#quick-start), start Renovo in your `Application`, and wrap your content in `RenovoUpdateHost`. It draws your content, and the update UI on top of it.
+Renovo starts once, when the host app's process starts. The place for that is your `Application` class. If your app has no `Application` class yet, create this file in the same package as `MainActivity.kt`:
 
 ```kotlin
 // App.kt
@@ -213,13 +65,28 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Renovo.init(this) {
+            // Example. Replace it with the address of your own version file.
             versionUrl = "https://example.com/app/version.json"
         }
     }
 }
 ```
 
-Register the class in `AndroidManifest.xml` with `<application android:name=".App" ...>`.
+`versionUrl` is the HTTPS address of your **version file**. The version file is a small JSON document that describes the latest version of your app. You write it in Step 4.
+
+Register the class in `app/src/main/AndroidManifest.xml`. Add only the `android:name` attribute and keep everything else:
+
+```xml
+<application
+    android:name=".App"
+    ... >
+```
+
+You declare no permissions. Renovo adds the ones it needs to your manifest when you build.
+
+### Step 3. Show the screens
+
+`RenovoUpdateHost` draws your content and, on top of it, the update UI. Wrap your content in it, inside your theme:
 
 ```kotlin
 // MainActivity.kt
@@ -242,32 +109,128 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
-Put `RenovoUpdateHost` inside your `MaterialTheme` (here `AppTheme`), so the update UI uses your colors. Nothing else is needed: the update UI follows the update state by itself.
+- `AppTheme` stands for your `MaterialTheme`, and `AppContent` for your own screen. Keep your names.
+- Put `RenovoUpdateHost` inside your theme. The update UI then uses your colors, fonts, and shapes.
+- Nothing else is needed. The update UI follows the update by itself.
+- If users stay for a long time in other activities too, wrap their content the same way. The update UI appears in the activity the user saw last.
 
-#### What the user sees
+### Step 4. Publish your first version file
 
-| Screen | When it shows | How it goes away |
-|---|---|---|
-| Update available | A newer optional version exists and is not downloaded yet. This happens when `autoDownload = false`, or after the user cancelled a download. Shows the release notes with the version and the size, when the version file has release notes. | "Later" hides it until the next app start. "Update" starts the download. |
-| Downloading | The user started the download. A background download shows nothing. | "Hide" hides it. The download continues. |
-| Ready to install | The file is downloaded and verified, and `canInstallNow` returns `true`. | "Not now" hides it until the next app start. "Install" installs. |
-| First-time permission | The user must allow installs from the host app. Explains the Android setting in three steps. | "Cancel" hides it until the next app start. "Open settings" opens the setting, and the update continues when the user comes back. |
-| Update not installed | Something the user started failed. Shows the reason. A failed background check shows nothing. | "Close" hides it. "Try again" retries. |
-| Forced update | A forced update exists. A full screen over the host app with the download progress, a network wait, the permission steps, a failure with "Try again", or the text for a device that cannot update. | **Cannot be dismissed.** Back and Esc do nothing. |
+The version file tells Renovo three things: the newest version code, its name, and where to download the APK. Two more fields let Renovo check the file and show its size.
 
-A choice such as "Later" is kept for the version it was made for, until the host app's process ends; Android may keep the process alive for a while after the user leaves the app. A newer version asks again. Rotating, resizing, folding, or unfolding never brings back a screen the user put away, and never restarts a download.
+Example. Replace the host, the file name, and the numbers with yours.
 
-More about the update UI:
+```json
+{
+  "versionCode": 2,
+  "versionName": "1.1.0",
+  "apkUrl": "https://example.com/app/app-1.1.0.apk",
+  "sha256": "3b4c8f0e2a9d7c61e5f04b2a8d9c3e7f1a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d",
+  "size": 25165824
+}
+```
 
-- **Languages.** Every text is in English and Azerbaijani and follows the device language. Other languages show English. You can add a language, see [Theming](#i-theming-the-update-ui).
-- **Window sizes.** The layout follows the window width, not the device type. Dialogs fill a phone's width minus margins, are 440dp wide on a medium window, and at most 560dp on a wide one. The forced update screen uses two columns on a wide window. Nothing is locked to one orientation.
-- **Keyboard and mouse.** Every screen works with a keyboard only. Enter runs the main action and Esc the dismiss action.
-- **Accessibility.** Touch targets are at least 48dp, and the progress indicator announces its value.
-- **Several activities.** The update state belongs to the whole process. The update UI appears only in the most recently resumed activity that has a `RenovoUpdateHost` or called `attachUi`. Add it to every activity a user can stay in for long, at least the launcher activity.
+| Field | What to put there |
+|---|---|
+| `versionCode` | The `versionCode` of the new APK, from its `build.gradle.kts`. Required. |
+| `versionName` | The version name the user sees. Required. |
+| `apkUrl` | The HTTPS address of the new APK. Required. |
+| `sha256` | The SHA-256 hash of the APK. Renovo installs the file only if the hash matches. Recommended. |
+| `size` | The size of the APK in bytes. Renovo uses it to show the download size and progress. Optional. |
 
-### b. Update UI in a Views or AppCompat app
+Compute the hash and the size of your APK with these two commands:
 
-Use the same dependency and the same `App` class as in [use case a](#a-update-ui-in-a-compose-app). In each activity, call `Renovo.attachUi(this)` in `onCreate`, after `setContentView`. It adds the update UI on top of your views. Your app needs no Compose code of its own.
+```sh
+shasum -a 256 app-release.apk   # the hash is the first word of the output (on Linux: sha256sum)
+wc -c < app-release.apk         # the size in bytes
+```
+
+On Windows PowerShell, use `Get-FileHash app-release.apk -Algorithm SHA256` and `(Get-Item app-release.apk).Length`.
+
+Save the file as `version.json`. Put it and the APK in one folder on your HTTPS server. The address of `version.json` must be exactly the `versionUrl` from Step 2.
+
+### Step 5. Try it
+
+1. Install the current version of your app, the one with Renovo, on a phone or an emulator. In this example its `versionCode` is 1.
+2. In `app/build.gradle.kts`, raise `versionCode` to 2 and set `versionName` to `"1.1.0"`.
+3. Build the new APK with the same signing key as the installed app, for example with `./gradlew assembleRelease`. The file is in `app/build/outputs/apk/release/`. Two debug builds made on the same computer share the debug key, so they also work for a test.
+4. Compute the hash and the size, and write `version.json` as in Step 4.
+5. Upload the APK first, then `version.json`. Open both addresses in a browser to check that they work.
+6. Open the installed app.
+
+What you should see:
+
+1. At first, nothing. Renovo checks and downloads in the background.
+2. When the download is verified, a dialog says "Ready to install". Tap "Install".
+3. The first time, a dialog says "Allow this app to update itself" and explains the Android setting. Tap "Open settings", turn on the switch, and go back. The update continues.
+4. Android may ask you to confirm. Then the app closes and the new version is installed. Open the app again: it is version 1.1.0.
+
+Nothing happens? Add `logger = RenovoLogger { message, error -> Log.d("Renovo", message, error) }` to the `Renovo.init` block, with the imports `android.util.Log` and `io.lightine.renovo.RenovoLogger`. Then read Logcat: Renovo writes what it does and why it stops.
+
+### What happens next
+
+Renovo checks the version file every time the app starts, and every six hours in the background. When it finds a higher `versionCode`, it downloads the APK in the background, and an interrupted download resumes where it stopped. The same version is never downloaded twice, and files of older versions are deleted. Before it installs, it checks the hash, the package name, the version code, and the signing certificate, so only a newer build of your own app can be installed. The "Ready to install" dialog appears while the app is open, and the install starts only when the user taps "Install". If an install fails or the user cancels it, the current version keeps running with its data.
+
+Next steps:
+
+- To publish the next version, raise `versionCode`, build, and replace the two files. The [release checklist](#release-checklist) has a script.
+- To make an update that the user cannot postpone, see [Forced updates](#forced-updates).
+- To get the version information from your own server API, see [Option B: Your own backend](#option-b-your-own-backend).
+
+## Path 2: Ready-made screens in an XML app
+
+Follow this path if your app draws its screens with XML layouts and Views, for example with `AppCompatActivity`. At the end, your app checks for updates by itself and shows ready-made update screens. In this guide these screens are called the **update UI**. You write about 15 lines of Kotlin and one small JSON file. Your app needs no Compose code of its own.
+
+You need an app with `minSdk` 24 or higher, `compileSdk` 37 or higher, Kotlin 2.4.0 or higher, and Java 17 or higher. You also need a place on the web that serves files over HTTPS.
+
+### Step 1. Add the dependency
+
+Renovo is on Maven Central. Add `renovo-ui` to your app module. It brings `renovo-core` with it. `renovo-core` checks, downloads, and installs. `renovo-ui` draws the screens. The screens are built with Jetpack Compose, and Gradle adds the Compose libraries for you. You do not need the Compose compiler plugin.
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("io.lightine.renovo:renovo-ui:0.1.0")
+}
+```
+
+Check that `mavenCentral()` is listed under `repositories` in `settings.gradle.kts`. New Android Studio projects have it.
+
+### Step 2. Start Renovo
+
+Renovo starts once, when the host app's process starts. The place for that is your `Application` class. If your app has no `Application` class yet, create this file in the same package as `MainActivity.kt`:
+
+```kotlin
+// App.kt
+import android.app.Application
+import io.lightine.renovo.Renovo
+
+class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        Renovo.init(this) {
+            // Example. Replace it with the address of your own version file.
+            versionUrl = "https://example.com/app/version.json"
+        }
+    }
+}
+```
+
+`versionUrl` is the HTTPS address of your **version file**. The version file is a small JSON document that describes the latest version of your app. You write it in Step 4.
+
+Register the class in `app/src/main/AndroidManifest.xml`. Add only the `android:name` attribute and keep everything else:
+
+```xml
+<application
+    android:name=".App"
+    ... >
+```
+
+You declare no permissions. Renovo adds the ones it needs to your manifest when you build.
+
+### Step 3. Show the screens
+
+Call `Renovo.attachUi(this)` in your activity's `onCreate`, after `setContentView`. It draws the update UI on top of your views.
 
 ```kotlin
 // MainActivity.kt
@@ -285,75 +248,151 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
-- Call it every time the activity is created, so the update UI comes back after a rotation. A second call for the same activity does nothing.
+- Call it every time the activity is created. After a rotation, the call brings the update UI back. A second call for the same activity does nothing.
 - The activity must be a `ComponentActivity`. Every `AppCompatActivity` and `FragmentActivity` is one. A plain `android.app.Activity` is not supported, because Compose needs what `ComponentActivity` provides.
-- `attachUi` has no Compose theme to take colors from. See [Theming](#i-theming-the-update-ui) to match your colors.
+- The update UI takes its colors from the wallpaper on Android 12 and later, and uses the Material 3 default colors on older versions. You can give it your own colors later.
+- If users stay for a long time in other activities too, call `attachUi` there as well. The update UI appears in the activity the user saw last.
 
-### c. Your own screens, core only
+### Step 4. Publish your first version file
 
-Use only `renovo-core` when you want to draw every screen yourself. Your app reads the update state and calls Renovo's actions.
+The version file tells Renovo three things: the newest version code, its name, and where to download the APK. Two more fields let Renovo check the file and show its size.
+
+Example. Replace the host, the file name, and the numbers with yours.
+
+```json
+{
+  "versionCode": 2,
+  "versionName": "1.1.0",
+  "apkUrl": "https://example.com/app/app-1.1.0.apk",
+  "sha256": "3b4c8f0e2a9d7c61e5f04b2a8d9c3e7f1a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d",
+  "size": 25165824
+}
+```
+
+| Field | What to put there |
+|---|---|
+| `versionCode` | The `versionCode` of the new APK, from its `build.gradle.kts`. Required. |
+| `versionName` | The version name the user sees. Required. |
+| `apkUrl` | The HTTPS address of the new APK. Required. |
+| `sha256` | The SHA-256 hash of the APK. Renovo installs the file only if the hash matches. Recommended. |
+| `size` | The size of the APK in bytes. Renovo uses it to show the download size and progress. Optional. |
+
+Compute the hash and the size of your APK with these two commands:
+
+```sh
+shasum -a 256 app-release.apk   # the hash is the first word of the output (on Linux: sha256sum)
+wc -c < app-release.apk         # the size in bytes
+```
+
+On Windows PowerShell, use `Get-FileHash app-release.apk -Algorithm SHA256` and `(Get-Item app-release.apk).Length`.
+
+Save the file as `version.json`. Put it and the APK in one folder on your HTTPS server. The address of `version.json` must be exactly the `versionUrl` from Step 2.
+
+### Step 5. Try it
+
+1. Install the current version of your app, the one with Renovo, on a phone or an emulator. In this example its `versionCode` is 1.
+2. In `app/build.gradle.kts`, raise `versionCode` to 2 and set `versionName` to `"1.1.0"`.
+3. Build the new APK with the same signing key as the installed app, for example with `./gradlew assembleRelease`. The file is in `app/build/outputs/apk/release/`. Two debug builds made on the same computer share the debug key, so they also work for a test.
+4. Compute the hash and the size, and write `version.json` as in Step 4.
+5. Upload the APK first, then `version.json`. Open both addresses in a browser to check that they work.
+6. Open the installed app.
+
+What you should see:
+
+1. At first, nothing. Renovo checks and downloads in the background.
+2. When the download is verified, a dialog says "Ready to install". Tap "Install".
+3. The first time, a dialog says "Allow this app to update itself" and explains the Android setting. Tap "Open settings", turn on the switch, and go back. The update continues.
+4. Android may ask you to confirm. Then the app closes and the new version is installed. Open the app again: it is version 1.1.0.
+
+Nothing happens? Add `logger = RenovoLogger { message, error -> Log.d("Renovo", message, error) }` to the `Renovo.init` block, with the imports `android.util.Log` and `io.lightine.renovo.RenovoLogger`. Then read Logcat: Renovo writes what it does and why it stops.
+
+### What happens next
+
+Renovo checks the version file every time the app starts, and every six hours in the background. When it finds a higher `versionCode`, it downloads the APK in the background, and an interrupted download resumes where it stopped. The same version is never downloaded twice, and files of older versions are deleted. Before it installs, it checks the hash, the package name, the version code, and the signing certificate, so only a newer build of your own app can be installed. The "Ready to install" dialog appears while the app is open, and the install starts only when the user taps "Install". If an install fails or the user cancels it, the current version keeps running with its data.
+
+Next steps:
+
+- To publish the next version, raise `versionCode`, build, and replace the two files. The [release checklist](#release-checklist) has a script.
+- To give the update UI your app's colors, see [Theme and texts of the ready-made screens](#theme-and-texts-of-the-ready-made-screens).
+- To make an update that the user cannot postpone, see [Forced updates](#forced-updates).
+- To get the version information from your own server API, see [Option B: Your own backend](#option-b-your-own-backend).
+
+## Path 3: Your own screens
+
+Follow this path if you want to draw every update screen yourself. You use only `renovo-core`, which checks, downloads, verifies, and installs. Your screens read the current update state and call Renovo's actions, such as "install now". This path shows a Compose screen and an XML screen. Use the one that fits your app.
+
+You need an app with `minSdk` 24 or higher, `compileSdk` 37 or higher, Kotlin 2.4.0 or higher, and Java 17 or higher. You also need a place on the web that serves files over HTTPS.
+
+### Step 1. Add the dependency
+
+Renovo is on Maven Central. Add `renovo-core` to your app module:
 
 ```kotlin
+// app/build.gradle.kts
 dependencies {
     implementation("io.lightine.renovo:renovo-core:0.1.0")
+
+    // Compose apps only: for collectAsStateWithLifecycle in Step 3. Skip it if your app has it.
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
 }
 ```
 
-Start Renovo in your `Application` exactly as in [use case a](#a-update-ui-in-a-compose-app). The `ui { }` settings then have no effect.
+Check that `mavenCentral()` is listed under `repositories` in `settings.gradle.kts`. New Android Studio projects have it.
 
-`Renovo.state` is a `StateFlow<UpdateState>`, a value that changes over time. It always holds one `UpdateState`, and it lives as long as the process, so it survives rotation and every screen. This activity shows the state as text and offers the right button for each state:
+### Step 2. Start Renovo
+
+Renovo starts once, when the host app's process starts. The place for that is your `Application` class. If your app has no `Application` class yet, create this file in the same package as `MainActivity.kt`:
 
 ```kotlin
-import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
-import androidx.activity.ComponentActivity
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
+// App.kt
+import android.app.Application
 import io.lightine.renovo.Renovo
-import io.lightine.renovo.UpdateState
-import kotlinx.coroutines.launch
 
-class UpdateActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_update)
-        val status = findViewById<TextView>(R.id.status)
-        val action = findViewById<Button>(R.id.action)
-        findViewById<Button>(R.id.check).setOnClickListener { Renovo.checkNow() }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                Renovo.state.collect { state ->
-                    status.text = describe(state)
-                    val button = buttonFor(state)
-                    action.isEnabled = button != null
-                    action.text = button?.first ?: ""
-                    action.setOnClickListener { button?.second?.invoke() }
-                }
-            }
+class App : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        Renovo.init(this) {
+            // Example. Replace it with the address of your own version file.
+            versionUrl = "https://example.com/app/version.json"
         }
     }
-
-    // The label and the action of the one button that fits the state, or null for none.
-    private fun buttonFor(state: UpdateState): Pair<String, () -> Unit>? = when (state) {
-        is UpdateState.Available -> "Download" to { Renovo.startDownload() }
-        is UpdateState.ReadyToInstall -> "Install" to { Renovo.installIfReady() }
-        is UpdateState.PermissionNeeded -> "Open settings" to { Renovo.installIfReady() }
-        is UpdateState.Failed -> "Try again" to { if (state.info == null) Renovo.checkNow() else Renovo.startDownload() }
-        // A forced update gets its own blocking screen, see "Forced updates".
-        else -> null
-    }
 }
 ```
 
-The message for every state. The `when` has no `else`, so the compiler tells you if a future version adds a state:
+`versionUrl` is the HTTPS address of your **version file**. The version file is a small JSON document that describes the latest version of your app. You write it in Step 4.
+
+Register the class in `app/src/main/AndroidManifest.xml`. Add only the `android:name` attribute and keep everything else:
+
+```xml
+<application
+    android:name=".App"
+    ... >
+```
+
+You declare no permissions. Renovo adds the ones it needs to your manifest when you build.
+
+### Step 3. Show the screens
+
+`Renovo.state` always holds the current update state, an `UpdateState`. For example, `Downloading` while the APK downloads, and `ReadyToInstall` when it is verified. It is a `StateFlow`, a value that changes over time and that your screen can observe. It lives as long as the app's process, so it survives rotation.
+
+Your screen does two things:
+
+- It shows a message for the current state.
+- It offers the one button that fits the state, such as "Install", and calls the matching Renovo action.
+
+This file turns a state into a message and a button. Both screens below use it. The `when` blocks have no `else` for the messages, so the compiler tells you if a future version of Renovo adds a state.
 
 ```kotlin
+// UpdateTexts.kt
 import io.lightine.renovo.DownloadProgress
+import io.lightine.renovo.Renovo
 import io.lightine.renovo.UpdateState
+import io.lightine.renovo.UpdateStep
 
+/** The label of a button and what the button does. */
+class UpdateAction(val label: String, val run: () -> Unit)
+
+/** One sentence for the user about the current state. */
 fun describe(state: UpdateState): String = when (state) {
     UpdateState.Idle -> "Not checked yet."
     UpdateState.Checking -> "Checking for updates..."
@@ -366,50 +405,405 @@ fun describe(state: UpdateState): String = when (state) {
     is UpdateState.Installing -> "Installing..."
     is UpdateState.Failed -> "The update failed: ${state.reason}."
     UpdateState.Unsupported -> "This device does not allow the app to update itself."
-    is UpdateState.Required -> "Version ${state.info.versionName} is required." // details in state.step
+    is UpdateState.Required -> "Version ${state.info.versionName} is required. ${describe(state.step)}"
+}
+
+/** The same for a forced update, which the user cannot postpone. */
+fun describe(step: UpdateStep): String = when (step) {
+    UpdateStep.WaitingForUser -> "Tap Update now."
+    is UpdateStep.Downloading -> "Downloading${percent(step.progress)}."
+    is UpdateStep.WaitingForNetwork -> "Waiting for an allowed network."
+    UpdateStep.PermissionNeeded -> "Allow this app to install updates in the settings."
+    UpdateStep.Installing -> "Installing..."
+    is UpdateStep.Failed -> "The update failed: ${step.reason}."
+    UpdateStep.Unsupported -> "This device cannot install it. Ask whoever installed the app."
+}
+
+/** The one button that fits the state, or null when the user has nothing to do. */
+fun actionFor(state: UpdateState): UpdateAction? = when (state) {
+    is UpdateState.Available -> UpdateAction("Download") { Renovo.startDownload() }
+    is UpdateState.ReadyToInstall -> UpdateAction("Install") { Renovo.installIfReady() }
+    is UpdateState.PermissionNeeded -> UpdateAction("Open settings") { Renovo.installIfReady() }
+    is UpdateState.Failed ->
+        if (state.info == null) {
+            UpdateAction("Check again") { Renovo.checkNow() }
+        } else {
+            UpdateAction("Try again") { Renovo.startDownload() }
+        }
+    is UpdateState.Required -> when (val step = state.step) {
+        UpdateStep.WaitingForUser -> UpdateAction("Update now") { Renovo.startDownload() }
+        UpdateStep.PermissionNeeded -> UpdateAction("Open settings") { Renovo.installIfReady() }
+        is UpdateStep.Failed -> UpdateAction("Try again") { Renovo.startDownload() }
+        is UpdateStep.WaitingForNetwork ->
+            if (step.canUseMobileData) UpdateAction("Use mobile data") { Renovo.useMobileDataOnce() } else null
+        else -> null
+    }
+    else -> null
 }
 
 private fun percent(progress: DownloadProgress): String =
     progress.totalBytes?.let { total -> ", ${progress.bytesDownloaded * 100 / total}%" } ?: ""
 ```
 
-In Compose, read the state with `val state by Renovo.state.collectAsStateWithLifecycle()` from `androidx.lifecycle:lifecycle-runtime-compose`.
+What the actions do:
 
-Without coroutines, use a listener. It is called on the main thread, once with the current state when you add it, and after every change. Remove it when the screen goes away.
+- `Renovo.startDownload()` starts the download, or tries again after a failure. If the file is already verified, it starts the install.
+- `Renovo.installIfReady()` installs the verified file. When the user must first allow installs from your app, it opens that Android setting instead.
+- `Renovo.useMobileDataOnce()` lets a waiting forced update download over mobile data, for this version only.
+- `Renovo.checkNow()` checks for a new version now.
+
+#### With Jetpack Compose
+
+This composable shows the message, the button, and a "Check for updates" link:
 
 ```kotlin
-// Inside your activity, where status is a TextView.
-private val listener = UpdateListener { state -> status.text = describe(state) }
+// UpdateSection.kt
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import io.lightine.renovo.Renovo
+import io.lightine.renovo.UpdateState
 
-override fun onStart() {
-    super.onStart()
-    Renovo.addListener(listener)
-}
-
-override fun onStop() {
-    Renovo.removeListener(listener)
-    super.onStop()
+@Composable
+fun UpdateSection(state: UpdateState, modifier: Modifier = Modifier) {
+    val action = actionFor(state)
+    Column(modifier.padding(16.dp)) {
+        Text(describe(state))
+        if (action != null) {
+            Button(onClick = action.run) { Text(action.label) }
+        }
+        TextButton(onClick = { Renovo.checkNow() }) { Text("Check for updates") }
+    }
 }
 ```
 
-Things your own screens must do, because the update UI is not there to do them:
-
-- **Block the app during a forced update**, and offer `Renovo.useMobileDataOnce()` while it waits for a network. See [Forced updates](#g-forced-updates) for the code.
-- **Offer the install.** Downloads start by themselves, so most users meet `ReadyToInstall` first. Show it, and call `Renovo.installIfReady()` when the user agrees.
-- **Hide background failures.** Show `Failed` only when `state.userInitiated` is `true`. Renovo retries network failures by itself.
-- **Show downloads the user started.** `Downloading.userInitiated` is `true` for those.
-
-The [Update state reference](#update-state-reference) lists every state, step, and failure reason.
-
-### d. You already have a backend API
-
-If your backend already knows the latest version, Renovo can ask it instead of reading a version file. Implement `VersionSource`, a function that returns an `UpdateInfo`, and set it as `versionSource` instead of `versionUrl`.
-
-`UpdateInfo` holds the same fields as the version file. Its constructor throws `IllegalArgumentException` for a value that is not allowed, such as an `apkUrl` that is not HTTPS or a `sha256` that is not 64 hexadecimal characters.
-
-This example calls `https://api.example.com/app/latest` with the platform's `HttpURLConnection` and reads a JSON answer like `{"build": 42, "name": "1.8.0", "url": "https://...", "sha256": "...", "force": false, "minBuild": 38, "notes": "- Bug fixes"}`. Change the field names to match your API.
+The activity reads the state and places the section above your content. During a forced update it shows only the section, so the app cannot be used until the update is installed:
 
 ```kotlin
+// MainActivity.kt
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.lightine.renovo.Renovo
+import io.lightine.renovo.UpdateState
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            AppTheme {
+                val state by Renovo.state.collectAsStateWithLifecycle()
+                if (state is UpdateState.Required) {
+                    // A forced update: nothing but the update section until it is installed.
+                    UpdateSection(state, Modifier.fillMaxSize())
+                } else {
+                    Column {
+                        UpdateSection(state)
+                        AppContent()
+                    }
+                }
+            }
+        }
+    }
+}
+```
+
+`AppTheme` stands for your `MaterialTheme`, and `AppContent` for your own screen. Keep your names.
+
+#### With XML layouts
+
+The layout has a status line, an action button, a "Check for updates" button, and a container for your app's own views:
+
+```xml
+<!-- res/layout/activity_main.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/update_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/update_action"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/update_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Check for updates" />
+
+    <!-- Your app's own views go here. -->
+    <FrameLayout
+        android:id="@+id/app_content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>
+```
+
+The activity listens to the state with an `UpdateListener`. Renovo calls the listener on the main thread: once with the current state when you add it, then after every change. Add it in `onStart` and remove it in `onStop`, so it runs only while the activity is visible.
+
+```kotlin
+// MainActivity.kt
+import android.os.Bundle
+import android.view.View
+import android.widget.Button
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import io.lightine.renovo.Renovo
+import io.lightine.renovo.UpdateListener
+import io.lightine.renovo.UpdateState
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var appContent: View
+    private lateinit var updateStatus: TextView
+    private lateinit var updateAction: Button
+
+    private val listener = UpdateListener { state -> render(state) }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        appContent = findViewById(R.id.app_content)
+        updateStatus = findViewById(R.id.update_status)
+        updateAction = findViewById(R.id.update_action)
+        findViewById<Button>(R.id.update_check).setOnClickListener { Renovo.checkNow() }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Renovo.addListener(listener)
+    }
+
+    override fun onStop() {
+        Renovo.removeListener(listener)
+        super.onStop()
+    }
+
+    private fun render(state: UpdateState) {
+        updateStatus.text = describe(state)
+        val action = actionFor(state)
+        updateAction.visibility = if (action == null) View.GONE else View.VISIBLE
+        updateAction.text = action?.label
+        updateAction.setOnClickListener { action?.run?.invoke() }
+        // A forced update: hide the app's own views until the update is installed.
+        appContent.visibility = if (state is UpdateState.Required) View.GONE else View.VISIBLE
+    }
+}
+```
+
+If you prefer coroutines, collect `Renovo.state` inside `lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { ... } }` instead of using a listener.
+
+#### What your screens must do
+
+The ready-made screens do these things for you. Your own screens must do them too:
+
+- **Block the app during a forced update.** `UpdateState.Required` means the user cannot postpone this update. Both examples above hide the app's own content while it is set.
+- **Offer the install.** Downloads start by themselves, so most users first meet `ReadyToInstall`. Show it, and call `Renovo.installIfReady()` when the user agrees.
+- **Keep background failures quiet.** A failure has `userInitiated = false` when nobody tapped anything, for example a background check without a network. Do not show a pop-up for it. Renovo retries network failures by itself.
+- **Show a download the user started.** `UpdateState.Downloading.userInitiated` is `true` for those.
+
+### Step 4. Publish your first version file
+
+The version file tells Renovo three things: the newest version code, its name, and where to download the APK. Two more fields let Renovo check the file and show its size.
+
+Example. Replace the host, the file name, and the numbers with yours.
+
+```json
+{
+  "versionCode": 2,
+  "versionName": "1.1.0",
+  "apkUrl": "https://example.com/app/app-1.1.0.apk",
+  "sha256": "3b4c8f0e2a9d7c61e5f04b2a8d9c3e7f1a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d",
+  "size": 25165824
+}
+```
+
+| Field | What to put there |
+|---|---|
+| `versionCode` | The `versionCode` of the new APK, from its `build.gradle.kts`. Required. |
+| `versionName` | The version name the user sees. Required. |
+| `apkUrl` | The HTTPS address of the new APK. Required. |
+| `sha256` | The SHA-256 hash of the APK. Renovo installs the file only if the hash matches. Recommended. |
+| `size` | The size of the APK in bytes. Renovo uses it to report the total size in `DownloadProgress`. Optional. |
+
+Compute the hash and the size of your APK with these two commands:
+
+```sh
+shasum -a 256 app-release.apk   # the hash is the first word of the output (on Linux: sha256sum)
+wc -c < app-release.apk         # the size in bytes
+```
+
+On Windows PowerShell, use `Get-FileHash app-release.apk -Algorithm SHA256` and `(Get-Item app-release.apk).Length`.
+
+Save the file as `version.json`. Put it and the APK in one folder on your HTTPS server. The address of `version.json` must be exactly the `versionUrl` from Step 2.
+
+### Step 5. Try it
+
+1. Install the current version of your app, the one with Renovo, on a phone or an emulator. In this example its `versionCode` is 1.
+2. In `app/build.gradle.kts`, raise `versionCode` to 2 and set `versionName` to `"1.1.0"`.
+3. Build the new APK with the same signing key as the installed app, for example with `./gradlew assembleRelease`. The file is in `app/build/outputs/apk/release/`. Two debug builds made on the same computer share the debug key, so they also work for a test.
+4. Compute the hash and the size, and write `version.json` as in Step 4.
+5. Upload the APK first, then `version.json`. Open both addresses in a browser to check that they work.
+6. Open the installed app.
+
+What you should see, with the screens from Step 3:
+
+1. "Checking for updates...", then "Downloading version 1.1.0" with a percentage.
+2. "Version 1.1.0 is ready to install." with an "Install" button. Tap it.
+3. The first time, "Allow this app to install updates in the settings." with an "Open settings" button. Tap it, turn on the switch, and go back. The install continues by itself.
+4. Android may ask you to confirm. Then the app closes and the new version is installed. Open the app again: it is version 1.1.0, and the screen says "You have the latest version."
+
+Nothing happens? Add `logger = RenovoLogger { message, error -> Log.d("Renovo", message, error) }` to the `Renovo.init` block, with the imports `android.util.Log` and `io.lightine.renovo.RenovoLogger`. Then read Logcat: Renovo writes what it does and why it stops.
+
+### What happens next
+
+Renovo checks the version file every time the app starts, and every six hours in the background. When it finds a higher `versionCode`, it downloads the APK in the background, and an interrupted download resumes where it stopped. The same version is never downloaded twice, and files of older versions are deleted. Before it installs, it checks the hash, the package name, the version code, and the signing certificate, so only a newer build of your own app can be installed. The install starts only when your screen calls `Renovo.installIfReady()` or `Renovo.startDownload()` while the app is open. If an install fails or the user cancels it, the current version keeps running with its data.
+
+Next steps:
+
+- To publish the next version, raise `versionCode`, build, and replace the two files. The [release checklist](#release-checklist) has a script.
+- Every state, step, and failure reason is listed in [Update states, steps, and failure reasons](#update-states-steps-and-failure-reasons).
+- A detailed blocking screen for a forced update is in [Forced updates](#forced-updates).
+- To get the version information from your own server API, see [Option B: Your own backend](#option-b-your-own-backend).
+
+More in the wiki: Core without the UI.
+
+## Where the version information comes from
+
+Renovo needs to know the latest version: its version code, its name, and where its APK is. There are two ways to tell it. Set exactly one of them in `Renovo.init`.
+
+| Option | Setting | Choose it when |
+|---|---|---|
+| [A. A version file on any HTTPS host](#option-a-a-version-file-on-any-https-host) | `versionUrl` | You have no backend, or you want nothing to run on the server. A static file is enough. |
+| [B. Your own backend](#option-b-your-own-backend) | `versionSource` | Your server already knows the latest version, or the answer depends on the user. |
+
+### Option A: A version file on any HTTPS host
+
+The version file is a JSON document that describes the latest version. Renovo downloads it from `versionUrl` at every check. It can be a static file on any server that speaks HTTPS.
+
+Example. This version file uses every field. Replace the host, the file name, and the numbers with yours.
+
+```json
+{
+  "versionCode": 42,
+  "versionName": "1.8.0",
+  "apkUrl": "https://example.com/app/app-1.8.0.apk",
+  "sha256": "3b4c8f0e2a9d7c61e5f04b2a8d9c3e7f1a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d",
+  "size": 25165824,
+  "mandatory": false,
+  "minSupportedVersionCode": 38,
+  "releaseNotes": {
+    "az": "- Sinxronizasiya **sürətləndirildi**\n- Xətalar aradan qaldırıldı",
+    "en": "- Sync is **faster**\n- Bug fixes"
+  }
+}
+```
+
+```kotlin
+Renovo.init(this) {
+    versionUrl = "https://example.com/app/version.json"
+}
+```
+
+#### Fields
+
+Only the first three fields are required.
+
+| Field | Required | Meaning |
+|---|---|---|
+| `versionCode` | yes | Version code of the new APK, the same number as `versionCode` in its `build.gradle.kts`. A whole number of 1 or more. Always raise it: Renovo installs only a higher version code than the installed one. |
+| `versionName` | yes | Version name shown to the user. A string. |
+| `apkUrl` | yes | HTTPS URL of the APK. |
+| `sha256` | no | SHA-256 hash of the APK, 64 hexadecimal characters, upper or lower case. When present, a file with another hash is never installed. |
+| `size` | no | APK size in bytes. Used only for display, such as the download size and the progress. A positive number. |
+| `mandatory` | no, default `false` | `true` makes this update a forced update for every older installed version. |
+| `minSupportedVersionCode` | no | Installed versions below this version code get a forced update. Versions at or above it get an optional one. |
+| `releaseNotes` | no | One string for every language, or an object with one string per language code, such as `en` or `pt-BR`. See [Release notes](#release-notes). |
+
+A **forced update** is an update the user cannot postpone. The host app stays blocked until it is installed. See [Forced updates](#forced-updates).
+
+#### Compute the hash and the size
+
+Add `sha256`. Without it, Renovo still checks the package name, the version code, and the signing certificate. The hash adds a check that the file is exactly the one you published.
+
+- **macOS:** `shasum -a 256 app-release.apk` prints the hash as the first word. `wc -c < app-release.apk` prints the size in bytes.
+- **Linux:** `sha256sum app-release.apk` and `wc -c < app-release.apk`.
+- **Windows PowerShell:** `Get-FileHash app-release.apk -Algorithm SHA256` prints the hash in capitals, which Renovo accepts. `(Get-Item app-release.apk).Length` prints the size.
+
+#### Hosting
+
+Any server that serves files over HTTPS with a certificate the device trusts works. The APK and the version file can be on different hosts. The `Content-Type` of the version file does not matter.
+
+- **A plain web server** or any static file hosting. Put `version.json` and the APK in one folder. Static file servers already send an ETag or a Last-Modified date and answer range requests, which Renovo uses to resume a download.
+- **Object storage**, meaning any bucket with an S3-compatible API. Make the two objects publicly readable, or put a CDN in front of the bucket, and use their HTTPS URLs. For a private bucket, see [Authentication](#authentication).
+- **GitHub Releases of a public repository.** Attach the APK and `version.json` to each release. Set `versionUrl` to `https://github.com/OWNER/REPO/releases/latest/download/version.json`. This address always points to the newest release that is not a draft or a pre-release. In the file, set `apkUrl` to that release's APK, such as `https://github.com/OWNER/REPO/releases/download/v1.8.0/app-1.8.0.apk`. GitHub redirects both to its download host over HTTPS, sends an ETag, and answers range requests, so checks and resumed downloads work. Private repositories do not work: their files need a token, and Renovo sends no headers with the APK request.
+
+More in the wiki: Hosting the version file.
+
+#### Release checklist
+
+Do this for each new version:
+
+1. **Raise `versionCode`** in the app's `build.gradle.kts`. It must be higher than every version in use.
+2. **Build a signed release APK** with the same signing key as before, for example with `./gradlew assembleRelease`. The file is in `app/build/outputs/apk/release/`. If you build app bundles, build a universal APK instead.
+3. **Compute the hash and the size.**
+4. **Write `version.json`** with the new `versionCode`, `versionName`, `apkUrl`, `sha256`, and `size`. Set `mandatory` or `minSupportedVersionCode` if this is a forced update.
+5. **Upload the APK first, then `version.json`.** In this order, a device never reads a file that points to an APK that is not there yet.
+6. **Check both URLs** in a browser or with `curl -I`. Both must answer `200` over HTTPS.
+
+A small script for steps 3 and 4 on macOS. On Linux, replace `shasum -a 256` with `sha256sum`. The version numbers and the address are examples.
+
+```sh
+APK=app/build/outputs/apk/release/app-release.apk
+SHA=$(shasum -a 256 "$APK" | cut -d ' ' -f 1)
+SIZE=$(wc -c < "$APK" | tr -d ' ')
+cat > version.json <<EOF
+{
+  "versionCode": 43,
+  "versionName": "1.9.0",
+  "apkUrl": "https://example.com/app/app-1.9.0.apk",
+  "sha256": "$SHA",
+  "size": $SIZE
+}
+EOF
+```
+
+#### Caching and ETag
+
+Renovo sends the ETag of the last version file it read, so the server answers `304 Not Modified` with no body when nothing changed, and a server without ETags still works. Renovo turns off the HTTP cache on the device, so if a CDN caches `version.json`, give it a short cache time such as `Cache-Control: max-age=300`, or clear the CDN cache after each release.
+
+### Option B: Your own backend
+
+Choose this option when your server already knows the latest version, or when the answer depends on the user, for example a test group that gets builds earlier. Renovo then asks your code instead of reading a version file.
+
+You implement `VersionSource`, a function that returns an `UpdateInfo`, and set it as `versionSource` instead of `versionUrl`. `UpdateInfo` holds the same fields as the version file. Its constructor throws `IllegalArgumentException` for a value that is not allowed, such as an `apkUrl` that is not HTTPS or a `sha256` that is not 64 hexadecimal characters.
+
+Example. This source calls `https://api.example.com/app/latest` with the platform's `HttpURLConnection`. It reads a JSON answer like this one. Change the address and the field names to match your API.
+
+```json
+{ "build": 42, "name": "1.8.0", "url": "https://example.com/app/app-1.8.0.apk", "sha256": null, "force": false, "minBuild": 38, "notes": "- Bug fixes" }
+```
+
+```kotlin
+// BackendVersionSource.kt
 import io.lightine.renovo.ReleaseNotes
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.VersionSource
@@ -453,18 +847,20 @@ class BackendVersionSource(private val endpoint: String) : VersionSource {
 }
 ```
 
+Set it in `Renovo.init`, in your `Application` class, instead of `versionUrl`:
+
 ```kotlin
 Renovo.init(this) {
     versionSource = BackendVersionSource("https://api.example.com/app/latest")
 }
 ```
 
-If your app already has an HTTP client with suspend functions, call it directly and map its answer:
+If your app already has an HTTP client with suspend functions, call it directly and map its answer. In this example, `myApi.latestVersion()` stands for your own call:
 
 ```kotlin
 Renovo.init(this) {
     versionSource = VersionSource {
-        val latest = myApi.latestVersion() // your own suspend call
+        val latest = myApi.latestVersion()
         UpdateInfo(
             versionCode = latest.build,
             versionName = latest.name,
@@ -477,17 +873,16 @@ Renovo.init(this) {
 }
 ```
 
-How Renovo treats your source:
+#### How errors map
 
-- It calls `latest()` for every check: at app start, every `checkInterval`, and on `Renovo.checkNow()`. There is no ETag here, so keep the call cheap.
-- To report a failed check, throw. An `IllegalArgumentException` counts as an answer that could not be read (`FailureReason.Parse`). Any other exception, such as an `IOException`, counts as a network failure (`FailureReason.Network`), and a background check is retried later with growing delays.
+- Renovo calls `latest()` for every check: at app start, every `checkInterval`, and on `Renovo.checkNow()`. There is no ETag here, so keep the call cheap.
+- To report a failed check, throw. An `IllegalArgumentException` counts as an answer that could not be read (`FailureReason.Parse`).
+- Any other exception, such as an `IOException`, counts as a network failure (`FailureReason.Network`). A background check is then retried later with growing delays.
 - `versionHeaders` is not used with a `versionSource`. Your own client adds whatever headers it needs.
-
-Release notes: `ReleaseNotes("- Bug fixes")` is one text for every language. `ReleaseNotes.of("en" to "...", "az" to "...")` is one text per language code, and the first entry is the last fallback. A code may carry a region, such as `"pt-BR"`. `notes.forLanguage("pt-BR")` returns the text Renovo would pick for that language tag, with the fallbacks described in [The version file](#the-version-file).
 
 #### Hand over version information you already have
 
-If the host app already receives version information, for example in its own sync response, pass it to Renovo. `submit` has the same effect as a successful check, and no extra request is made.
+If the host app already receives version information, for example in its own sync response, pass it to Renovo with `Renovo.submit`. It has the same effect as a successful check, and no extra request is made.
 
 ```kotlin
 Renovo.submit(UpdateInfo(versionCode = 42, versionName = "1.8.0", apkUrl = "https://example.com/app/app-1.8.0.apk"))
@@ -495,39 +890,9 @@ Renovo.submit(UpdateInfo(versionCode = 42, versionName = "1.8.0", apkUrl = "http
 
 `Renovo.init` still needs a `versionUrl` or a `versionSource`, because Renovo also checks on its own. There is no mode that only uses `submit`.
 
-### e. You have no backend
+### Authentication
 
-Then host a static version file next to your APK, as described in [The version file](#the-version-file), and set `versionUrl`. Nothing runs on the server.
-
-Release checklist for each new version:
-
-1. **Raise `versionCode`** in the app's `build.gradle.kts`. It must be higher than every version in use.
-2. **Build a signed release APK** with the same signing key as before, for example with `./gradlew assembleRelease`. The file is in `app/build/outputs/apk/release/`. Renovo installs one complete APK; if you build app bundles, build a universal APK instead.
-3. **Compute the hash and the size** (see [Compute the hash and the size](#compute-the-hash-and-the-size)).
-4. **Write `version.json`** with the new `versionCode`, `versionName`, `apkUrl`, `sha256`, and `size`. Set `mandatory` or `minSupportedVersionCode` if this is a forced update.
-5. **Upload the APK first, then `version.json`.** In this order a device never reads a file that points to an APK that is not there yet.
-6. **Check both URLs** in a browser or with `curl -I`. Both must answer `200` over HTTPS.
-
-A small script for steps 3 and 4 on macOS (on Linux, replace `shasum -a 256` with `sha256sum`):
-
-```sh
-APK=app/build/outputs/apk/release/app-release.apk
-SHA=$(shasum -a 256 "$APK" | cut -d ' ' -f 1)
-SIZE=$(wc -c < "$APK" | tr -d ' ')
-cat > version.json <<EOF
-{
-  "versionCode": 43,
-  "versionName": "1.9.0",
-  "apkUrl": "https://example.com/app/app-1.9.0.apk",
-  "sha256": "$SHA",
-  "size": $SIZE
-}
-EOF
-```
-
-### f. Authentication
-
-If the version file needs a token, set `versionHeaders`. Renovo calls it before every request to the version file, so a token that changes is always current.
+If the version file needs a token, set `versionHeaders`. Renovo calls it before every request to the version file, so a token that changes is always current. In this example, `tokens.current()` stands for your own code:
 
 ```kotlin
 Renovo.init(this) {
@@ -537,74 +902,97 @@ Renovo.init(this) {
 ```
 
 - The headers go to the version file only. If the server redirects to another host or port, Renovo drops them, so a token never leaks to a third party.
-- **The APK request carries no custom headers.** The `apkUrl` must work without them. Use a public URL or a signed URL that expires, such as a presigned URL from your object storage or a CDN token URL. Give a signed URL enough lifetime for a slow download, for example a day.
+- **The APK request carries no custom headers.** The `apkUrl` must work without them. Use a public URL, or a signed URL that expires, such as a presigned URL from your object storage or a CDN token URL. Give a signed URL enough lifetime for a slow download, for example a day.
 - Renovo recognizes a file by its version code and hash, not by its URL. A signed URL that changes at every check does not restart a download.
 - With a `versionSource`, `versionHeaders` is not used. Your own client adds the headers, and it can return a freshly signed `apkUrl` at every check.
 
-### g. Forced updates
+More in the wiki: Signing and verification.
 
-**Declare one** in the version file with `"mandatory": true` or `"minSupportedVersionCode"` (see [Forced updates in the file](#forced-updates-in-the-file)). With a `versionSource`, set `mandatory` or `minSupportedVersionCode` in the `UpdateInfo`.
+## Going further
 
-**What the user sees with the update UI.** A full screen covers the host app. It cannot be dismissed, and Back and Esc do nothing. With the default `autoDownload = true`, the download starts in the background and the screen shows its progress. When the file is ready, the user taps "Update now" and Android installs it. If the device waits for an allowed network, the screen says so and, when allowed, offers a "Download with mobile data" button. If the device does not allow the app to update itself, the screen says to ask whoever installed the app.
+Each section below stands on its own. All settings go in the block of `Renovo.init`. The [Settings](#settings) table lists every one.
 
-**What the host app should do.**
+### Forced updates
 
-- With the update UI, nothing. The forced screen appears on its own, in every activity that has the update UI.
+A forced update is an update the user cannot postpone. Use it after a security fix, or when your server no longer accepts old versions.
+
+**Declare it in the version file.** There are two ways. Use the one that matches your rule.
+
+Example. Force everyone onto version 42:
+
+```json
+{ "versionCode": 42, "versionName": "1.8.0", "apkUrl": "https://example.com/app/app-1.8.0.apk", "mandatory": true }
+```
+
+Example. Force only old versions. Devices on version code 37 or lower must update. Devices on 38 to 41 get an optional update:
+
+```json
+{ "versionCode": 42, "versionName": "1.8.0", "apkUrl": "https://example.com/app/app-1.8.0.apk", "minSupportedVersionCode": 38 }
+```
+
+`minSupportedVersionCode` works even when `mandatory` is `false`. A device that skipped several releases is still blocked. With a `versionSource`, set `mandatory` or `minSupportedVersionCode` in the `UpdateInfo`.
+
+**What the user sees with the update UI.** A full screen covers the host app. It cannot be dismissed, and Back and Esc do nothing. The download starts in the background and the screen shows its progress. When the file is ready, the user taps "Update now" and Android installs it. If the download waits for an allowed network, the screen says so and, when allowed, offers "Download with mobile data". If the device does not allow the app to update itself, the screen says to ask whoever installed the app.
+
+**What the host app should know.**
+
+- With the update UI, you do nothing. The forced screen appears on its own, in every activity that has the update UI.
 - `canInstallNow` still applies. While it returns `false`, a forced update waits too, so let it return `true` as soon as your data is safe.
 - The host app keeps running below the forced screen. If your backend no longer accepts the old version, expect its requests to fail until the user updates.
 - On a device that cannot install (`UpdateStep.Unsupported`), the user cannot get past the screen. Plan another way to deliver the APK there.
 
-**With your own screens**, `UpdateState.Required` means "block the app". It stays set through download and install, and its `step`, an `UpdateStep`, says what is happening:
+**With your own screens**, `UpdateState.Required` means "block the app". It stays set through download and install. Its `step`, an `UpdateStep`, says what is happening, and the [UpdateStep table](#updatestep) gives the action for each step. Hide the host app's content while it is set, as the screens in [Path 3](#path-3-your-own-screens) do. `Renovo.useMobileDataOnce()` works only when the step is `WaitingForNetwork` with `canUseMobileData = true`.
 
-```kotlin
-lifecycleScope.launch {
-    repeatOnLifecycle(Lifecycle.State.STARTED) {
-        Renovo.state.collect { state ->
-            val required = state as? UpdateState.Required
-            if (required == null) {
-                hideBlockingScreen()
-                return@collect
-            }
-            showBlockingScreen(required.info.versionName)
-            when (val step = required.step) {
-                UpdateStep.WaitingForUser -> showUpdateButton { Renovo.startDownload() }
-                is UpdateStep.Downloading -> showProgress(step.progress.bytesDownloaded, step.progress.totalBytes)
-                is UpdateStep.WaitingForNetwork -> showWaiting(step.canUseMobileData) { Renovo.useMobileDataOnce() }
-                UpdateStep.PermissionNeeded -> showAllowInstallsButton { Renovo.installIfReady() }
-                UpdateStep.Installing -> showInstalling()
-                is UpdateStep.Failed -> showRetryButton(step.reason) { Renovo.startDownload() }
-                UpdateStep.Unsupported -> showAskTheInstallerText()
-            }
-        }
-    }
+More in the wiki: Forced updates.
+
+### Release notes
+
+Release notes tell the user what is new. The update UI shows them in the "Update available" dialog and on the forced update screen.
+
+Example. One text for every language:
+
+```json
+"releaseNotes": "- Sync is **faster**\n- Bug fixes"
+```
+
+Example. One text per language code:
+
+```json
+"releaseNotes": {
+  "az": "- Sinxronizasiya **sürətləndirildi**\n- Xətalar aradan qaldırıldı",
+  "en": "- Sync is **faster**\n- Bug fixes"
 }
 ```
 
-The functions such as `showBlockingScreen` are yours. `Renovo.startDownload()` starts the download, or starts the install when the file is already verified. `Renovo.useMobileDataOnce()` lets the waiting download use mobile data, for this version only. It works only when `step.canUseMobileData` is `true`.
+- **Language codes.** A key is a language code, optionally with a region, such as `pt` or `pt-BR`. Case does not matter, and `pt_BR` means the same as `pt-BR`.
+- **Which text is picked.** For a phone set to Brazilian Portuguese, Renovo picks `pt-BR`, then `pt`, then any other `pt-` key in file order, then `en` (or the first `en-` key when there is no plain `en`), then the first entry. A phone set to plain `pt` gets `pt`, or the first `pt-` key when there is no plain `pt`.
+- **Which language counts.** The update UI uses the host app's language as its activity sees it, so a per-app language set on Android 13 and later is respected. The "Update ready" notification has no activity, so its texts come from the application context. On Android 12 and older, a language set only through AppCompat's per-app language support reaches activities, not the application context, so the notification may use the device language.
+- **Formatting.** Release notes may use `**bold**`, `*italic*`, lines that start with `- ` as bullets, `[text](https://...)` links, and line breaks. Everything else is shown as typed. Links open only if they are HTTPS.
 
-### h. Install timing, notifications, networks, logging
+In Kotlin, for a `versionSource` or `Renovo.submit`: `ReleaseNotes("- Bug fixes")` is one text for every language. `ReleaseNotes.of("en" to "...", "az" to "...")` is one text per language code, and the first entry is the last fallback. `notes.forLanguage("pt-BR")` returns the text Renovo would pick for that language tag.
 
-All of these are settings in the `Renovo.init` block. The [Settings reference](#settings-reference) lists every one.
+### Choose when an install may start
 
-#### Choose when an install may start
-
-An install closes the host app. If that would lose work, for example while data is not yet sent to your server, set `canInstallNow`:
+An install closes the host app. If that would lose work, for example while data is not yet sent to your server, set `canInstallNow`. In this example, `repository.hasUnsentData()` stands for your own code:
 
 ```kotlin
-canInstallNow = { !repository.hasUnsentData() }
+Renovo.init(this) {
+    versionUrl = "https://example.com/app/version.json"
+    canInstallNow = { !repository.hasUnsentData() }
+}
 ```
 
 - Renovo calls it on the main thread right before every install, optional or forced. Keep it fast. An exception counts as `false`.
-- While it returns `false`, the update stays ready (`ReadyToInstall`, or `Required` waiting for the user). The update UI asks again when it is about to show the dialog and whenever the activity resumes. Without the update UI, Renovo asks again at the next `Renovo.installIfReady()`.
-- The update UI shows its "Ready to install" dialog only while `canInstallNow` returns `true`. It asks when the dialog is about to show and every time the activity resumes.
+- While it returns `false`, the update stays ready (`ReadyToInstall`, or `Required` waiting for the user).
+- The update UI shows its "Ready to install" dialog only while `canInstallNow` returns `true`. It asks when the dialog is about to show and every time the activity resumes. Without the update UI, Renovo asks again at the next `Renovo.installIfReady()`.
 
-#### Download only when the user asks
+**Download only when the user asks.** By default, Renovo downloads a newer version as soon as it finds one. With `autoDownload = false`, it waits. The state is then `Available` (or `Required` waiting for the user) until `Renovo.startDownload()`, and the update UI shows its "Update available" dialog.
 
-By default, Renovo downloads a newer version as soon as it finds one. With `autoDownload = false`, it waits: the state is `Available` (or `Required` waiting for the user) until `Renovo.startDownload()`, and the update UI shows its "Update available" dialog.
+### Notifications
 
-#### Notifications
+When a download becomes ready to install and no activity of the host app is in the foreground, Renovo shows one "Update ready" notification. Tapping it opens the host app's launcher activity, where the update UI shows "Ready to install".
 
-- **When.** When a download becomes ready to install and no activity of the host app is in the foreground, Renovo shows one "Update ready" notification. Tapping it opens the host app's launcher activity, where the update UI shows "Ready to install". The notification never installs directly, because an install must start from the foreground. Renovo removes it when the update is installed or replaced by a newer version.
+- **It never installs directly**, because an install must start from the foreground. Renovo removes the notification when the update is installed or replaced by a newer version.
 - **Only when allowed.** Renovo shows it only if `notifications` is `true` and Android already allows notifications for the host app. Otherwise nothing is shown, and the install is offered at the next app start.
 - **Renovo never asks for the permission on its own.** On Android 13 and later, notifications need a runtime permission. Your app picks the moment, for example after the first successful sync, and calls:
 
@@ -616,14 +1004,18 @@ By default, Renovo downloads a newer version as soon as it finds one. With `auto
 - **Download progress.** A download the user starts runs as a foreground job, and Android requires a visible notification for it. That one follows Android's rules and is not controlled by `notifications`.
 - **Turn the "Update ready" notification off** with `notifications = false`.
 
-#### Networks
+### Networks and the check interval
 
-Optional and forced updates each have their own network setting:
+Optional and forced updates each have their own network setting. Example:
 
 ```kotlin
-optionalDownloadNetwork = Network.UnmeteredOnly // optional updates only on Wi-Fi and similar
-forcedDownloadNetwork = Network.NotRoaming      // forced updates on any network except roaming
-allowMobileDataOverride = true                  // a waiting forced update may offer mobile data
+Renovo.init(this) {
+    versionUrl = "https://example.com/app/version.json"
+    optionalDownloadNetwork = Network.UnmeteredOnly // optional updates only on Wi-Fi and similar
+    forcedDownloadNetwork = Network.NotRoaming // forced updates on any network except roaming
+    allowMobileDataOverride = true // a waiting forced update may offer mobile data
+    checkInterval = 12.hours // import kotlin.time.Duration.Companion.hours
+}
 ```
 
 - `Network.Any` - any connected network, including mobile data. The default for both.
@@ -632,21 +1024,11 @@ allowMobileDataOverride = true                  // a waiting forced update may o
 
 When a forced update waits for an allowed network, the user can choose to download with mobile data, for this version only. This needs `allowMobileDataOverride = true` (the default) and a `forcedDownloadNetwork` other than `Network.Any`.
 
-#### Check interval
+**Check interval.** The default is 6 hours and the minimum is 15 minutes, the shortest period WorkManager allows. WorkManager is the Android library that runs Renovo's background work. Renovo also checks at every app start and on `Renovo.checkNow()`. Android decides the exact moment of a background check, and an app that the user force-stopped runs no background work until it is opened again.
 
-Set `checkInterval = 12.hours` (with `import kotlin.time.Duration.Companion.hours`). The default is 6 hours and the minimum is 15 minutes, the shortest period WorkManager allows. Renovo also checks at every app start and on `Renovo.checkNow()`. Android decides the exact moment of a background check, and an app that the user force-stopped runs no background work until it is opened again.
+### Theme and texts of the ready-made screens
 
-#### Logging
-
-Logging is off until you set a `logger`. Messages never contain personal data. A logger that throws cannot break Renovo.
-
-```kotlin
-logger = RenovoLogger { message, error -> Log.d("Renovo", message, error) }
-```
-
-For problems that the log does not explain, see the wiki page Troubleshooting.
-
-### i. Theming the update UI
+The update UI has these screens: "Update available", "Downloading update", "Ready to install", "Allow this app to update itself", "Update not installed", and the full "Update required" screen for a forced update. Every text is in English and Azerbaijani and follows the device language. Other languages show English.
 
 #### Colors
 
@@ -654,6 +1036,8 @@ For problems that the log does not explain, see the wiki page Troubleshooting.
 - **`colorSchemes` replaces the inherited colors.** Pass a light and a dark Material 3 color scheme. The `ui { }` settings then choose between them.
 - **`attachUi` has nothing to inherit.** It uses `ui { themeMode }` to choose light or dark, then your `colorSchemes` if you passed them, then dynamic color (colors from the wallpaper) on Android 12 and later, then the Material 3 baseline colors.
 - One blind spot: a host theme that uses exactly the Material 3 baseline light scheme looks like no theme at all. The update UI then follows the `ui { }` settings.
+
+Example. The colors are placeholders:
 
 ```kotlin
 import androidx.compose.material3.darkColorScheme
@@ -668,7 +1052,7 @@ val schemes = RenovoColorSchemes(
 
 // Compose:
 RenovoUpdateHost(colorSchemes = schemes) { AppContent() }
-// Views:
+// XML layouts:
 Renovo.attachUi(this, colorSchemes = schemes)
 ```
 
@@ -679,7 +1063,7 @@ Set these in the `ui { }` block of `Renovo.init`. They apply when no theme is in
 ```kotlin
 ui {
     themeMode = ThemeMode.Dark // System (default), Light, or Dark
-    dynamicColor = false       // default true: wallpaper colors on Android 12 and later
+    dynamicColor = false // default true: wallpaper colors on Android 12 and later
 }
 ```
 
@@ -694,7 +1078,7 @@ Every text of the update UI is an Android string resource whose name starts with
 
 - Keep the same placeholders (`%1$s`, `%2$s`) as the original.
 - Change the Azerbaijani text too, in `res/values-az/strings.xml`. Otherwise Azerbaijani devices still see the original.
-- To add a language, define every string in your own folder for it, such as `res/values-de/strings.xml`.
+- **To add a language**, define every string in your own folder for it, such as `res/values-de/strings.xml`.
 - All names are in [`renovo-ui/src/main/res/values/strings.xml`](renovo-ui/src/main/res/values/strings.xml) and [`renovo-core/src/main/res/values`](renovo-core/src/main/res/values).
 - Resource names are not covered by the API compatibility check. Check your overrides after you upgrade Renovo.
 
@@ -702,14 +1086,40 @@ Every text of the update UI is an Android string resource whose name starts with
 
 The notification small icons are two drawables: `renovo_ic_update_ready` (update ready) and `renovo_ic_download` (download progress). To use your own, add a drawable with the same name to your app, for example `res/drawable/renovo_ic_update_ready.xml`. Android draws a notification small icon as a mask, so only the shape matters. The update UI also uses `renovo_ic_download` in its dialogs and on the forced update screen, so replacing it changes that icon too.
 
-## Settings reference
+More in the wiki: The update UI.
+
+### Logging
+
+Logging is off until you set a `logger`. Messages never contain personal data. A logger that throws cannot break Renovo.
+
+```kotlin
+Renovo.init(this) {
+    versionUrl = "https://example.com/app/version.json"
+    logger = RenovoLogger { message, error -> Log.d("Renovo", message, error) }
+}
+```
+
+More in the wiki: Troubleshooting.
+
+## Reference
+
+### Version file fields
+
+The fields are listed in the [Fields](#fields) table of Option A. These rules apply when Renovo reads the file:
+
+- **Unknown fields are ignored**, so the format can grow.
+- **A file that cannot be read** is a failed check, not a crash. Renovo tries again at the next check. This covers broken JSON, a missing required field, a plain HTTP `apkUrl`, and a file that is larger than 1 MiB or not in UTF-8.
+- **HTTPS only**, for the version file and for the APK. The server may redirect, up to five times, as long as every step is HTTPS.
+- **The body is read as JSON** whatever its `Content-Type`.
+
+### Settings
 
 All settings go in the block of `Renovo.init`, which you call once in `Application.onCreate`. Set exactly one of `versionUrl` and `versionSource`. Every other setting has a default. Invalid settings throw `IllegalArgumentException`. A second call to `init` is ignored.
 
 | Setting | Default | What it does |
 |---|---|---|
 | `versionUrl` | none | HTTPS URL of the version file. `versionUrl = "https://example.com/app/version.json"` |
-| `versionSource` | none | Your own source of version information, instead of a version file. See [use case d](#d-you-already-have-a-backend-api). |
+| `versionSource` | none | Your own source of version information, instead of a version file. See [Option B](#option-b-your-own-backend). |
 | `versionHeaders` | no headers | Extra headers for the version file request. `versionHeaders = { mapOf("Authorization" to "Bearer ${tokens.current()}") }` |
 | `checkInterval` | `6.hours` | Time between background checks. The minimum is 15 minutes. `checkInterval = 12.hours` |
 | `autoDownload` | `true` | `true` downloads a newer version without waiting for the user. `false` waits for `Renovo.startDownload()`. `autoDownload = false` |
@@ -719,9 +1129,9 @@ All settings go in the block of `Renovo.init`, which you call once in `Applicati
 | `notifications` | `true` | Shows the "Update ready" notification, only when notifications are already allowed. `notifications = false` |
 | `canInstallNow` | `{ true }` | Asked right before every install. Return `false` while an install would lose work. `canInstallNow = { !repository.hasUnsentData() }` |
 | `logger` | `null` (silent) | Receives Renovo's diagnostic messages. `logger = RenovoLogger { message, error -> Log.d("Renovo", message, error) }` |
-| `ui { }` | `themeMode = ThemeMode.System`, `dynamicColor = true` | Settings for the update UI, see [Theming](#i-theming-the-update-ui). `ui { themeMode = ThemeMode.Dark }` |
+| `ui { }` | `themeMode = ThemeMode.System`, `dynamicColor = true` | Settings for the update UI. `ui { themeMode = ThemeMode.Dark }` |
 
-A complete example with every setting:
+Example. Every setting at once. `tokens.current()` and `repository.hasUnsentData()` stand for your own code:
 
 ```kotlin
 import android.util.Log
@@ -753,9 +1163,9 @@ Renovo.init(this) {
 
 **Main process only.** `Application.onCreate` runs in every process of the host app, such as a `:remote` service or a crash reporter. `Renovo.init` checks the process name itself and does nothing outside the main process (the one named after the package), so you can call it unconditionally. In the other processes the other `Renovo` members throw `IllegalStateException`, as they do anywhere before `init`.
 
-## Update state reference
+### Update states, steps, and failure reasons
 
-### Actions
+#### Actions
 
 | Call | What it does | Example |
 |---|---|---|
@@ -767,7 +1177,7 @@ Renovo.init(this) {
 | `Renovo.requestNotificationPermission(activity)` | Asks the user to allow notifications. | `Renovo.requestNotificationPermission(this)` |
 | `Renovo.addListener(listener)` / `Renovo.removeListener(listener)` | Calls a listener on the main thread with every state. | `Renovo.addListener { state -> render(state) }` |
 
-### `UpdateState`
+#### `UpdateState`
 
 `Renovo.state.value` is always one of these. Every state with `info` carries the `UpdateInfo` of the version concerned.
 
@@ -786,7 +1196,7 @@ Renovo.init(this) {
 | `Unsupported` | This device does not allow the app to update itself. Nothing is tried until the installed version changes. |
 | `Required(info, step)` | A forced update exists. It stays set through download and install, and `step` says what is happening. |
 
-### `UpdateStep`
+#### `UpdateStep`
 
 The `step` of `Required`:
 
@@ -802,7 +1212,7 @@ The `step` of `Required`:
 
 `DownloadProgress` has `bytesDownloaded` and `totalBytes`. `totalBytes` is `null` while the size is not known.
 
-### `FailureReason`
+#### `FailureReason`
 
 | Reason | Meaning |
 |---|---|
@@ -815,7 +1225,7 @@ The `step` of `Required`:
 | `InstallRejected` | The system rejected the install. |
 | `Cancelled` | The user cancelled the install. A download the user cancels from its notification is not a failure: the update goes back to "update available" (`Available`, or `Required` waiting for the user), it is not downloaded again by itself, and `startDownload()` restarts it. |
 
-## What Renovo adds to your manifest
+### What Renovo adds to your manifest
 
 Renovo merges these permissions and components into the host app's manifest. You declare nothing yourself. To see the result, open the Merged Manifest tab of `AndroidManifest.xml` in Android Studio.
 
@@ -838,7 +1248,7 @@ WorkManager, which Renovo uses for its background jobs, adds three more permissi
 
 Both libraries ship R8 and ProGuard consumer rules, so a host app with code shrinking needs no extra rules.
 
-## Behavior per Android version
+### Behavior per Android version
 
 Renovo supports Android 7.0 (API 24) and later. It handles the differences for you. This table says what you will see.
 
@@ -873,7 +1283,7 @@ If any condition fails, Android shows the confirmation screen and Renovo carries
 
 **Devices that cannot install.** If the device has no way to grant the permission, a policy forbids installs from unknown sources, or the installer rejects the install as not allowed, Renovo sets `Unsupported` and stops trying until the next version of the host app is installed.
 
-## Known limits
+### Known limits
 
 These are Android limits on devices that are not centrally managed. Renovo cannot remove them.
 
@@ -886,6 +1296,7 @@ These are Android limits on devices that are not centrally managed. Renovo canno
 - **Same signing key, always.** Every APK must be signed with the same key as the installed app, or Android refuses it. Renovo checks this first so it can give a clear reason.
 - **A v2 or newer APK signature is required.** An APK with only the old v1 (JAR) signature fails the file check with `HashMismatch`. Android's build tools add v2 and v3 signatures by default.
 - **Unsupported stays until the next version.** When device policy forbids installs from the host app, Renovo reports `Unsupported` and keeps that answer until a different version of the host app is installed, even if the policy is lifted later.
+- **Do not publish an APK from Android Studio's Run button.** Run marks the APK as test-only (`android:testOnly`), and Android installs such an APK only through adb, so Renovo cannot install it. Build the APK you publish, also for a test, with `./gradlew assembleDebug` or `./gradlew assembleRelease` from the command line.
 
 **Local update servers on Android 17.** An app that targets Android 17 (API 37) or higher cannot reach a private network address, such as `10.0.2.2` or `192.168.1.20`, without the `ACCESS_LOCAL_NETWORK` permission. The request times out. If the host app fetches its version file or APK from such an address, for example in a test setup, declare the permission and, where the platform asks, request it at run time. Renovo does not add it, because public HTTPS hosts do not need it. See Android's [local network permission](https://developer.android.com/privacy-and-security/local-network-permission) page.
 
@@ -903,7 +1314,7 @@ These are Android limits on devices that are not centrally managed. Renovo canno
 - **Device management** features.
 - **Hosting** the version file or the APK. You provide the server.
 
-## Google developer verification
+### Google developer verification
 
 Google is rolling out developer verification for apps on certified Android devices. A developer registers with Google, and registers each app's package name and signing key. On a device where verification is enforced, an app from an unregistered developer fails to install, and an update to an unregistered app fails too.
 
@@ -915,7 +1326,9 @@ What it means for you:
 - Renovo reports a verification failure as `FailureReason.InstallRejected`, and on Android 16.1 (API 36.1) and later writes the reason to your `logger`.
 - Google's page: [developer.android.com/developer-verification](https://developer.android.com/developer-verification).
 
-## Requirements
+More in the wiki: Signing and verification.
+
+### Requirements
 
 | What | Value |
 |---|---|
@@ -928,11 +1341,16 @@ What it means for you:
 
 **Kotlin version.** Renovo is compiled with Kotlin 2.4.21, so its class files carry Kotlin metadata version 2.4. Kotlin documents compatibility in its [evolution principles](https://kotlinlang.org/docs/kotlin-evolution-principles.html): a newer compiler reads the binaries of older ones, and a compiler can usually, but with no guarantee, read the binaries of the next language release. So build the host app with **Kotlin 2.4.0 or higher**. Kotlin 2.3 can usually read Renovo, but Kotlin does not guarantee it. Kotlin 2.2 and older are not supported. With Compose, keep the Kotlin Compose compiler plugin at the same version as Kotlin.
 
-**Dependencies.** `renovo-core` depends on WorkManager, `androidx.core`, and kotlinx.coroutines, which most apps already have. `renovo-ui` adds Jetpack Compose, Material 3, `androidx.activity`, and the Compose window size libraries.
+**Modules and dependencies.** Renovo has two modules, and they always have the same version.
 
-## Versioning, changelog, license
+| Module | What it has | Depends on |
+|---|---|---|
+| `renovo-core` | Checking, downloading, verifying, installing, and the update state. No screens. | WorkManager, `androidx.core`, and kotlinx.coroutines, which most apps already have. |
+| `renovo-ui` | The update UI, built with Jetpack Compose. Works in Compose apps and in apps without Compose. | `renovo-core`, Jetpack Compose, Material 3, `androidx.activity`, and the Compose window size libraries. |
 
-- **Versioning.** Renovo follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). `renovo-core` and `renovo-ui` always have the same version, so use the same version for both. The public API is checked for accidental breaking changes between releases.
+### Versioning, changelog, license
+
+- **Versioning.** Renovo follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). `renovo-core` and `renovo-ui` always have the same version, so use the same version for both. The public API is checked for accidental breaking changes between releases. More in the wiki: Versioning policy.
 - **Changelog.** [`CHANGELOG.md`](CHANGELOG.md) lists every change.
 - **API reference.** Every public class, function, and setting has a description and an example in its KDoc. Build the reference with Dokka: `./gradlew dokkaGenerate`. The HTML pages are in `renovo-core/build/dokka/html` and `renovo-ui/build/dokka/html`.
 - **More help.** The wiki has deeper pages, such as Troubleshooting.
