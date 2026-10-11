@@ -11,7 +11,6 @@ plugins {
     // modules load one copy of each plugin.
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
-    alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.dokka) apply false
     alias(libs.plugins.maven.publish) apply false
@@ -24,10 +23,10 @@ allprojects {
 
 // Binary compatibility validator 0.18.2 starts its work only when it sees the `kotlin-android` plugin,
 // which AGP 9 no longer applies (Kotlin is built in). So it creates no tasks for the Android library
-// modules. The block below registers its own task types by hand for those modules. test-server is a
-// plain Kotlin/JVM module that the plugin would pick up, and it has no API to guard.
+// modules. The block below registers its own task types by hand for those modules. Only the published
+// `renovo-` modules have a public API to guard, so any other module in the build is skipped.
 apiValidation {
-    ignoredProjects.add("test-server")
+    ignoredProjects.addAll(subprojects.map { it.name }.filterNot { it.startsWith("renovo-") })
 }
 val abiValidatorVersion =
     libs.versions.binary.compatibility.validator

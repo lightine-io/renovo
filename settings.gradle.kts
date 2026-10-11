@@ -45,5 +45,9 @@ rootProject.name = "renovo"
 
 include(":renovo-core")
 include(":renovo-ui")
-include(":sample")
-include(":test-server")
+
+// Modules that live only on a developer's machine, such as a private sample app, are included
+// from local/settings.gradle.kts. Git ignores that folder, and nothing in the repository depends
+// on it, so a clean checkout builds without it.
+val localSettings = file("local/settings.gradle.kts")
+if (localSettings.isFile) apply(from = localSettings)

@@ -26,9 +26,6 @@ androidx-activity = "1.13.0"
 androidx-lifecycle = "2.11.0"
 androidx-savedstate = "1.5.0"
 
-# sample
-androidx-appcompat = "1.8.0"
-
 # Tests
 junit = "4.13.2"
 robolectric = "4.17"
@@ -54,8 +51,6 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 androidx-savedstate = { module = "androidx.savedstate:savedstate", version.ref = "androidx-savedstate" }
 
-androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
-
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
@@ -70,11 +65,9 @@ roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = 
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 
 [plugins]
-# AGP 9 has built-in Kotlin, so org.jetbrains.kotlin.android must not be applied. The Kotlin JVM
-# plugin is for test-server only.
+# AGP 9 has built-in Kotlin, so org.jetbrains.kotlin.android must not be applied.
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 # The Compose compiler ships with Kotlin and must match its version.
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

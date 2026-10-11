@@ -1,2 +1,0 @@
-# Default certificate folder (`<dir>/.cert`) when the served folder is inside this module.
-.cert/
