@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Id of the ComposeView that Renovo.attachUi adds. A ComposeView saves its screen-local state
+         under its id, so the id must be the same after every activity recreation. -->
+    <item name="renovo_ui_host" type="id" />
+</resources>
