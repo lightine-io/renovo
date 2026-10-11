@@ -53,3 +53,7 @@ logs/
 /PROMPT.md
 /CLAUDE.md
 /.claude/
+
+# The sample app, the local test server, and the helper scripts are development tools that stay on
+# the developer's machine. The root settings include them when this folder exists.
+/local/

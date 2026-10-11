@@ -58,7 +58,6 @@ That is all. What happens next:
 - [Known limits](#known-limits)
 - [Google developer verification](#google-developer-verification)
 - [Requirements](#requirements)
-- [Testing the integration](#testing-the-integration)
 - [Versioning, changelog, license](#versioning-changelog-license)
 
 ## How it works
@@ -550,10 +549,6 @@ if (me?.processName == packageName) Renovo.init(this) { versionUrl = "https://ex
 ```
 
 On Android 9 and later, `Application.getProcessName() == packageName` does the same.
-
-## Testing the integration
-
-The `sample` app updates itself from version 1 to version 2, and the `test-server` module serves a version file and an APK from your machine over HTTPS, with `Range` and `If-None-Match` support and a switch that cuts a download in the middle to test resume. Use the two together on an emulator to see the whole flow. Read [`sample/README.md`](sample/README.md) for the sample and [`test-server/README.md`](test-server/README.md) for the server. The sample's debug build trusts the test server's self-signed certificate. Your release build must not.
 
 ## Versioning, changelog, license
 
