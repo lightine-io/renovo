@@ -3,6 +3,7 @@ package io.lightine.renovo.ui.forced
 import androidx.compose.runtime.Composable
 import io.lightine.renovo.DownloadProgress
 import io.lightine.renovo.FailureReason
+import io.lightine.renovo.Network
 import io.lightine.renovo.ReleaseNotes
 import io.lightine.renovo.ThemeMode
 import io.lightine.renovo.UpdateInfo
@@ -43,6 +44,7 @@ private fun ForcedStage(
     info: UpdateInfo = sampleInfo,
     step: UpdateStep,
     isOnline: Boolean = true,
+    forcedDownloadNetwork: Network = Network.UnmeteredOnly,
     legacyPermissionStep: Boolean = false,
 ) {
     RenovoTheme(themeMode = ThemeMode.System, dynamicColor = false, colorSchemes = null, inheritHostTheme = false) {
@@ -51,6 +53,7 @@ private fun ForcedStage(
             installedVersionName = "1.6.2",
             step = step,
             isOnline = isOnline,
+            forcedDownloadNetwork = forcedDownloadNetwork,
             legacyPermissionStep = legacyPermissionStep,
             onUpdateNow = {},
             onTryAgain = {},

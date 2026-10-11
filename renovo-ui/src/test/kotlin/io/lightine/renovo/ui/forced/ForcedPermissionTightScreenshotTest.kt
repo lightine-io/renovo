@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.v2.createEmptyComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.core.app.ActivityScenario
 import com.github.takahirom.roborazzi.captureRoboImage
+import io.lightine.renovo.Network
 import io.lightine.renovo.UpdateStep
 import org.junit.Rule
 import org.junit.Test
@@ -65,6 +66,7 @@ class ForcedPermissionTightScreenshotTest {
                 installedVersionName = INSTALLED_VERSION,
                 step = UpdateStep.PermissionNeeded,
                 isOnline = true,
+                forcedDownloadNetwork = Network.UnmeteredOnly,
                 legacyPermissionStep = false,
                 onUpdateNow = {},
                 onTryAgain = {},

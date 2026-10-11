@@ -5,6 +5,7 @@ import android.text.format.Formatter
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.test.core.app.ApplicationProvider
+import io.lightine.renovo.Network
 import io.lightine.renovo.ReleaseNotes
 import io.lightine.renovo.ThemeMode
 import io.lightine.renovo.UpdateInfo
@@ -48,7 +49,8 @@ internal fun ComposeContentTestRule.setForcedContent(
     info: UpdateInfo = forcedInfo(),
     isOnline: Boolean = true,
     legacyPermissionStep: Boolean = false,
-) = setForcedContentOf(calls, { step }, info, isOnline, legacyPermissionStep)
+    forcedDownloadNetwork: Network = Network.UnmeteredOnly,
+) = setForcedContentOf(calls, { step }, info, isOnline, legacyPermissionStep, forcedDownloadNetwork)
 
 /**
  * Like [setForcedContent], but the step is read on every composition, so a test can change it from
@@ -60,6 +62,7 @@ internal fun ComposeContentTestRule.setForcedContentOf(
     info: UpdateInfo = forcedInfo(),
     isOnline: Boolean = true,
     legacyPermissionStep: Boolean = false,
+    forcedDownloadNetwork: Network = Network.UnmeteredOnly,
 ) {
     setContent {
         ForcedTheme {
@@ -68,6 +71,7 @@ internal fun ComposeContentTestRule.setForcedContentOf(
                 installedVersionName = INSTALLED_VERSION,
                 step = step(),
                 isOnline = isOnline,
+                forcedDownloadNetwork = forcedDownloadNetwork,
                 legacyPermissionStep = legacyPermissionStep,
                 onUpdateNow = { calls.updateNow++ },
                 onTryAgain = { calls.tryAgain++ },

@@ -1,6 +1,7 @@
 package io.lightine.renovo.ui.forced
 
 import android.text.format.Formatter
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import io.lightine.renovo.DownloadProgress
 import io.lightine.renovo.FailureReason
+import io.lightine.renovo.Network
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.InnerCard
@@ -61,6 +63,9 @@ import io.lightine.renovo.ui.reasonRes
 /**
  * Everything to the right of (expanded) or below (compact, medium) the shape: headline, body,
  * the versions, and the part that depends on [step].
+ *
+ * [forcedDownloadNetwork] is the host app's `forcedDownloadNetwork`. It picks the waiting note: the
+ * Wi-Fi text only when the download waits for an unmetered network, the general text otherwise.
  */
 @Composable
 internal fun ForcedTextColumn(
@@ -70,6 +75,7 @@ internal fun ForcedTextColumn(
     installedVersionName: String,
     step: UpdateStep,
     isOnline: Boolean,
+    forcedDownloadNetwork: Network,
     legacyPermissionStep: Boolean,
     onUpdateNow: () -> Unit,
     onTryAgain: () -> Unit,
@@ -138,7 +144,7 @@ internal fun ForcedTextColumn(
             is UpdateStep.WaitingForNetwork -> {
                 InnerCard(modifier = Modifier.fillMaxWidth()) {
                     Text(
-                        text = stringResource(R.string.renovo_ui_forced_waiting_note),
+                        text = stringResource(waitingNoteRes(forcedDownloadNetwork)),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = textAlign,
@@ -170,6 +176,14 @@ internal fun ForcedTextColumn(
             UpdateStep.Unsupported -> Unit
         }
     }
+}
+
+// Only an unmetered-only download waits for Wi-Fi. The other settings accept mobile data too, so a
+// note that names Wi-Fi would send the user looking for the wrong network.
+@StringRes
+private fun waitingNoteRes(network: Network): Int = when (network) {
+    Network.UnmeteredOnly -> R.string.renovo_ui_forced_waiting_note
+    Network.NotRoaming, Network.Any -> R.string.renovo_ui_forced_waiting_note_any_network
 }
 
 /** "Installed 1.6.2   Required 1.8.0" in one rounded row, with the versions in medium weight. */

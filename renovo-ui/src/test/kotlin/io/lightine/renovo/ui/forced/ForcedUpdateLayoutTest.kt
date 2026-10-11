@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.lightine.renovo.Network
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.R
 import io.lightine.renovo.ui.dialogs.str
@@ -101,6 +102,7 @@ class ForcedUpdateLayoutTest {
                     installedVersionName = INSTALLED_VERSION,
                     step = UpdateStep.WaitingForNetwork(canUseMobileData = true),
                     isOnline = true,
+                    forcedDownloadNetwork = Network.UnmeteredOnly,
                     legacyPermissionStep = false,
                     onUpdateNow = {},
                     onTryAgain = {},

@@ -30,6 +30,9 @@ class NotificationStringsTest {
         assertEquals("App updates", context.getString(R.string.renovo_notification_channel_name))
         assertEquals("Update ready", context.getString(R.string.renovo_notification_ready_title))
         assertEquals("Tap to install version 1.8.0.", context.getString(R.string.renovo_notification_ready_text, "1.8.0"))
+        assertEquals("Update downloads", context.getString(R.string.renovo_download_channel_name))
+        assertEquals("Downloading update", context.getString(R.string.renovo_download_notification_title))
+        assertEquals("6 MB of 24 MB", context.getString(R.string.renovo_download_notification_progress, "6 MB", "24 MB"))
     }
 
     @Test
@@ -39,6 +42,9 @@ class NotificationStringsTest {
         assertEquals("Tətbiq yeniləmələri", context.getString(R.string.renovo_notification_channel_name))
         assertEquals("Yeniləmə hazırdır", context.getString(R.string.renovo_notification_ready_title))
         assertEquals("1.8.0 versiyasını quraşdırmaq üçün toxunun.", context.getString(R.string.renovo_notification_ready_text, "1.8.0"))
+        assertEquals("Yeniləmələrin yüklənməsi", context.getString(R.string.renovo_download_channel_name))
+        assertEquals("Yeniləmə yüklənir", context.getString(R.string.renovo_download_notification_title))
+        assertEquals("6 MB / 24 MB", context.getString(R.string.renovo_download_notification_progress, "6 MB", "24 MB"))
     }
 
     @Test

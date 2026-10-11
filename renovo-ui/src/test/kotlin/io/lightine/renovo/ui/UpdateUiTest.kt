@@ -1,6 +1,7 @@
 package io.lightine.renovo.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -10,6 +11,10 @@ import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.lightine.renovo.FailureReason
 import io.lightine.renovo.ThemeMode
 import io.lightine.renovo.UpdateInfo
@@ -27,6 +32,16 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+
+/** A stand-in for the activity, resumed from the start, with a lifecycle the test moves by hand. */
+private class TestActivityLifecycle : LifecycleOwner {
+    private val registry = LifecycleRegistry.createUnsafe(this).apply { currentState = Lifecycle.State.RESUMED }
+    override val lifecycle: Lifecycle get() = registry
+
+    fun moveTo(state: Lifecycle.State) {
+        registry.currentState = state
+    }
+}
 
 // A phone-sized window tall enough for every screen, so a button is on screen without scrolling.
 @RunWith(RobolectricTestRunner::class)
@@ -138,6 +153,41 @@ class UpdateUiTest {
         assertShown()
 
         rule.runOnIdle { canInstall = true }
+        rule.waitForIdle()
+        assertShown(Screen.ReadyToInstall)
+    }
+
+    @Test
+    fun theReadyDialogAsksTheHostAppAgainWhenTheActivityResumes() {
+        val activity = TestActivityLifecycle()
+        // A plain flag, not Compose state, like most host settings: only a new composition reads it again.
+        var hostAllows = false
+        rule.setContent {
+            CompositionLocalProvider(LocalLifecycleOwner provides activity) {
+                RenovoTheme(themeMode = ThemeMode.Light, dynamicColor = false, colorSchemes = null, inheritHostTheme = false) {
+                    UpdateUi(
+                        state = UpdateState.ReadyToInstall(uiInfo()),
+                        canInstallNow = { hostAllows },
+                        actions = recorded.actions,
+                        isOnline = true,
+                        installedVersionName = "1.6.2",
+                        legacyPermissionStep = false,
+                        dismissed = dismissed,
+                    )
+                }
+            }
+        }
+        rule.waitForIdle()
+        assertShown()
+
+        hostAllows = true
+        rule.waitForIdle()
+        assertShown()
+
+        // The user leaves the app and comes back.
+        rule.runOnIdle { activity.moveTo(Lifecycle.State.STARTED) }
+        rule.waitForIdle()
+        rule.runOnIdle { activity.moveTo(Lifecycle.State.RESUMED) }
         rule.waitForIdle()
         assertShown(Screen.ReadyToInstall)
     }

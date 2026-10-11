@@ -61,6 +61,7 @@ internal fun RenovoUpdateUi(
         UpdateUi(
             state = state,
             canInstallNow = config.canInstallNow,
+            forcedDownloadNetwork = config.forcedDownloadNetwork,
             actions = UpdateUiActions.Default,
             active = rememberIsActiveHost(),
         )
