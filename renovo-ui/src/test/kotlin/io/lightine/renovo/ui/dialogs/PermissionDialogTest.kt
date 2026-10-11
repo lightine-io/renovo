@@ -32,10 +32,12 @@ class PermissionDialogTest {
     private fun show(
         legacyStepText: Boolean = false,
         dismissible: Boolean = true,
+        android17Step: Boolean = false,
     ) {
         rule.setDialogContent {
             PermissionDialog(
                 legacyStepText = legacyStepText,
+                android17Step = android17Step,
                 dismissible = dismissible,
                 onCancel = { cancel++ },
                 onOpenSettings = { openSettings++ },
@@ -73,6 +75,25 @@ class PermissionDialogTest {
     fun theCurrentStepTextIsUsedByDefault() {
         show(legacyStepText = false)
         rule.onNodeWithText(str(R.string.renovo_ui_permission_step_2_legacy)).assertDoesNotExist()
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_step_2_android17)).assertDoesNotExist()
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_option_label)).assertDoesNotExist()
+    }
+
+    @Test
+    fun android17StepShowsTheAlwaysAllowChoiceInsteadOfTheSwitch() {
+        show(android17Step = true)
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_step_2_android17)).assertIsDisplayed()
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_option_label)).assertIsDisplayed()
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_step_2)).assertDoesNotExist()
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_step_2_legacy)).assertDoesNotExist()
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_switch_label)).assertDoesNotExist()
+    }
+
+    @Test
+    fun withoutTheAndroid17StepTheSwitchIsShown() {
+        show(android17Step = false)
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_step_2)).assertIsDisplayed()
+        rule.onNodeWithText(str(R.string.renovo_ui_permission_switch_label)).assertIsDisplayed()
     }
 
     @Test
@@ -124,6 +145,20 @@ class PermissionDialogTest {
             assertFalse("A node in the illustration can be clicked", node.config.contains(SemanticsActions.OnClick))
         }
         // The card holds the label and the drawn switch, nothing else.
+        assertTrue(card.selfAndDescendants().size > 1)
+    }
+
+    @Test
+    fun theOptionIllustrationIsHiddenFromAccessibilityAndTakesNoFocusOrTouch() {
+        show(android17Step = true)
+        val label = rule.onNodeWithText(str(R.string.renovo_ui_permission_option_label)).fetchSemanticsNode()
+        val card = label.selfAndAncestors().first { it.config.contains(SemanticsProperties.HideFromAccessibility) }
+        card.selfAndDescendants().forEach { node ->
+            assertFalse("A node in the illustration can be focused", node.config.contains(SemanticsProperties.Focused))
+            assertFalse("A node in the illustration can be selected", node.config.contains(SemanticsProperties.Selected))
+            assertFalse("A node in the illustration can be clicked", node.config.contains(SemanticsActions.OnClick))
+        }
+        // The card holds the label and the drawn radio button, nothing else.
         assertTrue(card.selfAndDescendants().size > 1)
     }
 }

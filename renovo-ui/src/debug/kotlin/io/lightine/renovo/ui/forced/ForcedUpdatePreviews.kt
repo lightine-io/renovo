@@ -46,6 +46,7 @@ private fun ForcedStage(
     isOnline: Boolean = true,
     forcedDownloadNetwork: Network = Network.UnmeteredOnly,
     legacyPermissionStep: Boolean = false,
+    android17PermissionStep: Boolean = false,
 ) {
     RenovoTheme(themeMode = ThemeMode.System, dynamicColor = false, colorSchemes = null, inheritHostTheme = false) {
         ForcedUpdateScreen(
@@ -55,6 +56,7 @@ private fun ForcedStage(
             isOnline = isOnline,
             forcedDownloadNetwork = forcedDownloadNetwork,
             legacyPermissionStep = legacyPermissionStep,
+            android17PermissionStep = android17PermissionStep,
             onUpdateNow = {},
             onTryAgain = {},
             onOpenSettings = {},
@@ -115,6 +117,12 @@ internal fun ForcedPermissionNeededPreview() {
 @Composable
 internal fun ForcedPermissionNeededLegacyPreview() {
     ForcedStage(step = UpdateStep.PermissionNeeded, legacyPermissionStep = true)
+}
+
+@ForcedVariants
+@Composable
+internal fun ForcedPermissionNeededAndroid17Preview() {
+    ForcedStage(step = UpdateStep.PermissionNeeded, android17PermissionStep = true)
 }
 
 @ForcedVariants

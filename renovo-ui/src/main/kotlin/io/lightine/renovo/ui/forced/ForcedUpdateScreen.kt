@@ -62,6 +62,7 @@ import io.lightine.renovo.ui.rememberWindowWidth
  *     isOnline = true,
  *     forcedDownloadNetwork = Network.Any,
  *     legacyPermissionStep = false,
+ *     android17PermissionStep = false,
  *     onUpdateNow = { Renovo.startDownload() },
  *     onTryAgain = { Renovo.startDownload() },
  *     onOpenSettings = { Renovo.installIfReady() },
@@ -74,6 +75,8 @@ import io.lightine.renovo.ui.rememberWindowWidth
  * @param isOnline False shows the offline note while the screen waits for the user.
  * @param forcedDownloadNetwork The host app's `forcedDownloadNetwork`. `UnmeteredOnly` makes the waiting note name Wi-Fi.
  * @param legacyPermissionStep True on Android 7.0 and 7.1 (API 24-25), where step 2 names "unknown sources".
+ * @param android17PermissionStep True on Android 17 and later (API 37+), where step 2 names "Always allow"
+ *   and the picture shows that choice instead of the switch. Never true together with [legacyPermissionStep].
  * @param onUpdateNow Called for "Update now" and for Enter while it has focus.
  * @param onTryAgain Called for "Try again".
  * @param onOpenSettings Called for "Open settings".
@@ -87,6 +90,7 @@ internal fun ForcedUpdateScreen(
     isOnline: Boolean,
     forcedDownloadNetwork: Network,
     legacyPermissionStep: Boolean,
+    android17PermissionStep: Boolean,
     onUpdateNow: () -> Unit,
     onTryAgain: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -125,6 +129,7 @@ internal fun ForcedUpdateScreen(
                     isOnline = isOnline,
                     forcedDownloadNetwork = forcedDownloadNetwork,
                     legacyPermissionStep = legacyPermissionStep,
+                    android17PermissionStep = android17PermissionStep,
                     onUpdateNow = onUpdateNow,
                     onTryAgain = onTryAgain,
                     onOpenSettings = onOpenSettings,

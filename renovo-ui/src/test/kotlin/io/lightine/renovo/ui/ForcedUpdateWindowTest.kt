@@ -57,6 +57,7 @@ class ForcedUpdateWindowTest {
                 isOnline = true,
                 installedVersionName = "1.6.2",
                 legacyPermissionStep = false,
+                android17PermissionStep = false,
                 dismissed = DismissedUpdates(),
             )
         }

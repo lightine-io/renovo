@@ -83,6 +83,7 @@ class NoClippingTest {
                     isOnline = false,
                     installedVersionName = LONG_VERSION,
                     legacyPermissionStep = false,
+                    android17PermissionStep = false,
                     dismissed = DismissedUpdates(),
                 )
             }

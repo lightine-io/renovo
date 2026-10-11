@@ -55,7 +55,8 @@ class ForcedUpdateScreenTest {
         isOnline: Boolean = true,
         legacyPermissionStep: Boolean = false,
         forcedDownloadNetwork: Network = Network.UnmeteredOnly,
-    ) = rule.setForcedContent(calls, step, info, isOnline, legacyPermissionStep, forcedDownloadNetwork)
+        android17PermissionStep: Boolean = false,
+    ) = rule.setForcedContent(calls, step, info, isOnline, legacyPermissionStep, forcedDownloadNetwork, android17PermissionStep)
 
     private fun assertTextShown(text: String) = rule.onNodeWithText(text).assertIsDisplayed()
 
@@ -273,6 +274,39 @@ class ForcedUpdateScreenTest {
     }
 
     @Test
+    fun android17PermissionStepShowsTheAlwaysAllowChoiceInsteadOfTheSwitch() {
+        show(UpdateStep.PermissionNeeded, android17PermissionStep = true)
+        assertTextShown(str(R.string.renovo_ui_permission_step_2_android17))
+        assertTextShown(str(R.string.renovo_ui_permission_option_label))
+        assertTextAbsent(str(R.string.renovo_ui_permission_step_2))
+        assertTextAbsent(str(R.string.renovo_ui_permission_step_2_legacy))
+        assertTextAbsent(str(R.string.renovo_ui_permission_switch_label))
+        assertTextShown(str(R.string.renovo_ui_open_settings))
+    }
+
+    @Test
+    fun withoutTheAndroid17StepTheSwitchIsShownAndTheChoiceIsNot() {
+        show(UpdateStep.PermissionNeeded, android17PermissionStep = false)
+        assertTextShown(str(R.string.renovo_ui_permission_step_2))
+        assertTextShown(str(R.string.renovo_ui_permission_switch_label))
+        assertTextAbsent(str(R.string.renovo_ui_permission_step_2_android17))
+        assertTextAbsent(str(R.string.renovo_ui_permission_option_label))
+    }
+
+    @Test
+    fun theOptionIllustrationIsHiddenFromAccessibilityAndTakesNoFocusOrTouch() {
+        show(UpdateStep.PermissionNeeded, android17PermissionStep = true)
+        val label = rule.onNodeWithText(str(R.string.renovo_ui_permission_option_label)).fetchSemanticsNode()
+        val card = label.selfAndAncestors().first { it.config.contains(SemanticsProperties.HideFromAccessibility) }
+        card.selfAndDescendants().forEach { node ->
+            assertFalse("A node in the illustration can be focused", node.config.contains(SemanticsProperties.Focused))
+            assertFalse("A node in the illustration can be selected", node.config.contains(SemanticsProperties.Selected))
+            assertFalse("A node in the illustration can be clicked", node.config.contains(SemanticsActions.OnClick))
+        }
+        assertTrue(card.selfAndDescendants().size > 1)
+    }
+
+    @Test
     fun openSettingsCallsOnOpenSettingsOnly() {
         show(UpdateStep.PermissionNeeded)
         rule.onNodeWithText(str(R.string.renovo_ui_open_settings)).performClick()
@@ -424,6 +458,17 @@ class ForcedUpdateScreenTest {
     @Config(sdk = [37], qualifiers = "az-w411dp-h731dp-xhdpi")
     fun thePermissionStateFitsWithoutScrollingOn411By731InAzerbaijani() = assertPermissionStateFits()
 
+    // The Android 17 step has a longer step 2 and a radio choice for a picture; it must fit the same short phone.
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [37], qualifiers = "w411dp-h659dp-xhdpi")
+    fun theAndroid17PermissionStateFitsWithoutScrollingOn411By731BelowTheSystemBars() = assertPermissionStateFits(android17PermissionStep = true)
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [37], qualifiers = "az-w411dp-h659dp-xhdpi")
+    fun theAndroid17PermissionStateFitsWithoutScrollingOn411By731BelowTheSystemBarsInAzerbaijani() = assertPermissionStateFits(android17PermissionStep = true)
+
     // The tight variant drops the versions pill, which only a short compact window needs to do.
     @Test
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -476,8 +521,8 @@ class ForcedUpdateScreenTest {
         rule.onNodeWithText(button).performScrollTo().assertIsDisplayed()
     }
 
-    private fun assertPermissionStateFits() {
-        show(UpdateStep.PermissionNeeded)
+    private fun assertPermissionStateFits(android17PermissionStep: Boolean = false) {
+        show(UpdateStep.PermissionNeeded, android17PermissionStep = android17PermissionStep)
         assertNoScrollLeft()
         assertTextShown(str(R.string.renovo_ui_open_settings))
     }

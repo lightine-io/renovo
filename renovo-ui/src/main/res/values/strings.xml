@@ -30,8 +30,10 @@
     <string name="renovo_ui_permission_step_1">Tap Open settings</string>
     <string name="renovo_ui_permission_step_2">Turn on the switch shown below</string>
     <string name="renovo_ui_permission_step_2_legacy">Turn on installing from unknown sources</string>
+    <string name="renovo_ui_permission_step_2_android17">Choose \"Always allow\"</string>
     <string name="renovo_ui_permission_step_3">Go back - the update continues</string>
     <string name="renovo_ui_permission_switch_label">Allow from this source</string>
+    <string name="renovo_ui_permission_option_label">Always allow</string>
     <string name="renovo_ui_cancel">Cancel</string>
     <string name="renovo_ui_open_settings">Open settings</string>
 

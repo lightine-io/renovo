@@ -50,8 +50,8 @@ import io.lightine.renovo.Network
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.InnerCard
+import io.lightine.renovo.ui.PermissionIllustration
 import io.lightine.renovo.ui.PermissionSteps
-import io.lightine.renovo.ui.PermissionSwitchIllustration
 import io.lightine.renovo.ui.R
 import io.lightine.renovo.ui.ReleaseNotesText
 import io.lightine.renovo.ui.RenovoProgress
@@ -77,6 +77,7 @@ internal fun ForcedTextColumn(
     isOnline: Boolean,
     forcedDownloadNetwork: Network,
     legacyPermissionStep: Boolean,
+    android17PermissionStep: Boolean,
     onUpdateNow: () -> Unit,
     onTryAgain: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -115,7 +116,7 @@ internal fun ForcedTextColumn(
             )
         }
         // The permission state on a short compact window drops the pill: the versions have no use while the
-        // user turns a switch on, and the height it frees keeps "Open settings" on screen.
+        // user grants the permission, and the height it frees keeps "Open settings" on screen.
         if (!tight) {
             VersionsPill(installedVersionName = installedVersionName, requiredVersionName = info.versionName)
         }
@@ -158,6 +159,7 @@ internal fun ForcedTextColumn(
 
             UpdateStep.PermissionNeeded -> PermissionBlock(
                 legacyPermissionStep = legacyPermissionStep,
+                android17PermissionStep = android17PermissionStep,
                 onOpenSettings = onOpenSettings,
                 width = width,
                 tight = tight,
@@ -283,6 +285,7 @@ private fun ProgressBlock(
 @Composable
 private fun PermissionBlock(
     legacyPermissionStep: Boolean,
+    android17PermissionStep: Boolean,
     onOpenSettings: () -> Unit,
     width: WindowWidth,
     tight: Boolean,
@@ -298,8 +301,12 @@ private fun PermissionBlock(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
         )
-        PermissionSteps(legacyStepText = legacyPermissionStep, textStyle = MaterialTheme.typography.bodyLarge)
-        PermissionSwitchIllustration()
+        PermissionSteps(
+            legacyStepText = legacyPermissionStep,
+            android17Step = android17PermissionStep,
+            textStyle = MaterialTheme.typography.bodyLarge,
+        )
+        PermissionIllustration(android17Step = android17PermissionStep)
         // No "Cancel": a forced update cannot be postponed.
         ForcedPrimaryButton(text = stringResource(R.string.renovo_ui_open_settings), onClick = onOpenSettings, width = width)
     }

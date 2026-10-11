@@ -104,6 +104,7 @@ class ForcedUpdateLayoutTest {
                     isOnline = true,
                     forcedDownloadNetwork = Network.UnmeteredOnly,
                     legacyPermissionStep = false,
+                    android17PermissionStep = false,
                     onUpdateNow = {},
                     onTryAgain = {},
                     onOpenSettings = {},
