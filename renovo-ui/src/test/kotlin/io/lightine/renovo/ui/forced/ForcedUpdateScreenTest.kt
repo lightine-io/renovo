@@ -23,6 +23,7 @@ import androidx.test.espresso.Espresso
 import io.lightine.renovo.DownloadProgress
 import io.lightine.renovo.FailureReason
 import io.lightine.renovo.Network
+import io.lightine.renovo.ReleaseNotes
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.R
@@ -116,6 +117,15 @@ class ForcedUpdateScreenTest {
         show(UpdateStep.WaitingForUser, info = forcedInfo(releaseNotes = null))
         assertTextAbsent(str(R.string.renovo_ui_whats_new))
         assertTextShown(str(R.string.renovo_ui_update_now))
+    }
+
+    @Test
+    @Config(sdk = [37], qualifiers = "pt-rBR-w390dp-h844dp-xhdpi")
+    fun theReleaseNotesFollowTheRegionOfTheScreenLanguage() {
+        val notes = ReleaseNotes.of("en" to "- English notes", "pt" to "- Notas", "pt-BR" to "- Notas do Brasil")
+        show(UpdateStep.WaitingForUser, info = forcedInfo(releaseNotes = notes))
+        assertTextShown("Notas do Brasil")
+        assertTextAbsent("Notas")
     }
 
     @Test

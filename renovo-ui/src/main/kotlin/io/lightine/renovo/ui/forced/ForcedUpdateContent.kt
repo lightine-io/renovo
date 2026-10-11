@@ -124,7 +124,8 @@ internal fun ForcedTextColumn(
             UpdateStep.WaitingForUser -> {
                 val notes = info.releaseNotes
                 if (notes != null) {
-                    val language = LocalConfiguration.current.locales[0].language
+                    // The whole tag, not only the language, so a key with a region such as "pt-BR" can match.
+                    val language = LocalConfiguration.current.locales[0].toLanguageTag()
                     val markdown = remember(notes, language) { notes.forLanguage(language) }
                     ReleaseNotesCard(markdown = markdown)
                 }

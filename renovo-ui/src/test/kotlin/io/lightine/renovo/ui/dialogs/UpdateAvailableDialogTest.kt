@@ -60,6 +60,14 @@ class UpdateAvailableDialogTest {
     }
 
     @Test
+    @Config(sdk = [37], qualifiers = "pt-rBR")
+    fun showsTheReleaseNotesForTheRegionOfTheScreenLanguage() {
+        show(releaseNotes = ReleaseNotes.of("en" to "- English notes", "pt" to "- Notas", "pt-BR" to "- Notas do Brasil"))
+        rule.onNodeWithText("Notas do Brasil").assertIsDisplayed()
+        rule.onNodeWithText("Notas").assertDoesNotExist()
+    }
+
+    @Test
     fun hidesTheReleaseNotesCardWhenThereAreNoNotes() {
         show(releaseNotes = null)
         rule.onNodeWithText(str(R.string.renovo_ui_available_headline)).assertIsDisplayed()
