@@ -5,6 +5,7 @@ import io.lightine.renovo.RenovoLogger
 import io.lightine.renovo.internal.FetchResult
 import io.lightine.renovo.internal.VersionFetcher
 import io.lightine.renovo.internal.isHttpsUrl
+import io.lightine.renovo.internal.parseUrl
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -50,10 +51,11 @@ internal class HttpVersionFetcher(
     }
 
     private suspend fun request(etag: String?): FetchResult {
-        if (!isHttpsUrl(url)) return fail(FailureReason.Network, "The version file URL is not an https URL.", null)
+        val origin =
+            parseUrl(url)?.takeIf { isHttpsUrl(url) }
+                ?: return fail(FailureReason.Network, "The version file URL is not an https URL.", null)
         // Read once per check, so a token that was refreshed since the last check is used.
         val hostHeaders = headers()
-        val origin = URL(url)
         var current = origin
         for (hop in 0..MAX_REDIRECTS) {
             currentCoroutineContext().ensureActive()
@@ -76,7 +78,7 @@ internal class HttpVersionFetcher(
                             return fail(FailureReason.Network, "The version file URL redirects more than $MAX_REDIRECTS times.", null)
                         }
                         current = nextHop(current, connection.getHeaderField(LOCATION_HEADER))
-                            ?: return fail(FailureReason.Network, "The version file redirect has no target, or the target is not https.", null)
+                            ?: return fail(FailureReason.Network, "The version file redirect has no valid target, or the target is not https.", null)
                     }
 
                     else -> return fail(FailureReason.Network, "The version file request returned HTTP $status.", null)
@@ -108,13 +110,12 @@ internal class HttpVersionFetcher(
         if (etag != null) connection.setRequestProperty("If-None-Match", etag)
     }
 
-    /** Resolves a redirect target against [from], or returns null when there is none or it is not https. */
+    /** Resolves a redirect target against [from], or returns null when there is none, it is not valid, or it is not https. */
     private fun nextHop(
         from: URL,
         location: String?,
     ): URL? {
-        if (location.isNullOrBlank()) return null
-        val target = URL(from, location.trim())
+        val target = location?.let { parseUrl(it, base = from) } ?: return null
         return if (isHttpsUrl(target.toExternalForm())) target else null
     }
 

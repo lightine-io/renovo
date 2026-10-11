@@ -2,6 +2,7 @@ package io.lightine.renovo.internal.work
 
 import android.content.Context
 import io.lightine.renovo.internal.Clock
+import io.lightine.renovo.internal.parseUrl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
@@ -13,7 +14,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
-import java.net.MalformedURLException
 import java.net.URL
 
 /**
@@ -143,7 +143,8 @@ internal class ApkTransfer(
             if (status !in REDIRECTS) return connection
             val location = connection.getHeaderField("Location")
             connection.disconnect()
-            if (hop == MAX_REDIRECTS || location == null) {
+            // A blank target names no new address. Following it would only repeat this request up to the limit.
+            if (hop == MAX_REDIRECTS || location.isNullOrBlank()) {
                 throw RejectedDownloadException("The server redirects too often.")
             }
             url = parse(location, base = url)
@@ -154,13 +155,9 @@ internal class ApkTransfer(
     private fun parse(
         spec: String,
         base: URL? = null,
-    ): URL = try {
-        if (base == null) URL(spec) else URL(base, spec)
-    } catch (_: MalformedURLException) {
-        // The exception's message repeats the offending text, which for a redirect is whatever the
-        // server sent. The worker logs this message, so it stays fixed.
-        throw RejectedDownloadException("The download address is not valid.")
-    }
+    ): URL = // Fixed text without the address: for a redirect it is whatever the server sent, and the
+        // worker logs this message.
+        parseUrl(spec, base) ?: throw RejectedDownloadException("The download address is not valid.")
 
     private suspend fun handle(
         connection: HttpURLConnection,

@@ -204,6 +204,33 @@ class HttpVersionFetcherTest {
     }
 
     @Test
+    fun `a redirect target without a leading slash is resolved against the current folder`() = runTest {
+        val server = FakeServer(redirect("beta/version.json"), ok())
+        assertEquals(FetchResult.Found(expectedInfo, null), fetcher(server).fetch(null))
+        assertEquals("https://updates.example.com/app/beta/version.json", server.connections.last().url.toString())
+    }
+
+    @Test
+    fun `a query-only redirect target is resolved against the current folder`() = runTest {
+        // java.net resolves a reference that is only a query by RFC 2396, which drops the last path
+        // segment. This pins that result so a change to it is noticed.
+        val server = FakeServer(redirect("?channel=beta"), ok())
+        assertEquals(FetchResult.Found(expectedInfo, null), fetcher(server).fetch(null))
+        assertEquals("https://updates.example.com/app/?channel=beta", server.connections.last().url.toString())
+    }
+
+    @Test
+    fun `a redirect target that is not a valid URL is a network failure without a second request`() = runTest {
+        for (location in listOf("https://[broken/version.json", "https://updates.example.com/a b.json", "   ")) {
+            val logger = RecordingLogger()
+            val server = FakeServer(redirect(location), ok())
+            assertEquals(location, FetchResult.Failed(FailureReason.Network), fetcher(server, logger = logger).fetch(null))
+            assertEquals(location, 1, server.connections.size)
+            assertEquals(location, listOf("The version file redirect has no valid target, or the target is not https."), logger.messages)
+        }
+    }
+
+    @Test
     fun `a redirect from https to http is rejected without a second request`() = runTest {
         val server = FakeServer(redirect("http://updates.example.com/version.json"), ok())
         assertEquals(FetchResult.Failed(FailureReason.Network), fetcher(server).fetch(null))

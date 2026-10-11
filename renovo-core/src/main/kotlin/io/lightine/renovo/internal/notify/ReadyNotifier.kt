@@ -111,8 +111,8 @@ internal class ReadyNotifier(
 
         /**
          * Extra on the launcher intent: a Long with the version code of the update that the
-         * notification announced. The update UI reads it to tell that the app was opened from the
-         * notification, and then goes straight to the "Ready to install" screen.
+         * notification announced. A host app that reads its launcher intent can use it to tell
+         * which version the notification was about. The update UI does not read it.
          */
         const val EXTRA_READY_VERSION_CODE = "io.lightine.renovo.READY_VERSION_CODE"
     }
