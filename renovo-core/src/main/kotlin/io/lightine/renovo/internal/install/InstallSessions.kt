@@ -18,6 +18,7 @@ internal class InstallSessions {
     // the system has handed out a session id.
     private var busy = false
     private var openId: Int? = null
+    private var targetCode: Long? = null
     private var deferredConfirmation: Intent? = null
     private var foregroundHookRegistered = false
 
@@ -38,10 +39,18 @@ internal class InstallSessions {
         }
     }
 
-    fun opened(sessionId: Int) {
+    /**
+     * Records the session the system created. [targetVersionCode] is the version code of the APK in
+     * it, so a late "aborted" status can be told apart from an install that did complete.
+     */
+    fun opened(
+        sessionId: Int,
+        targetVersionCode: Long? = null,
+    ) {
         synchronized(lock) {
             busy = true
             openId = sessionId
+            targetCode = targetVersionCode
         }
     }
 
@@ -49,6 +58,10 @@ internal class InstallSessions {
 
     val openSessionId: Int?
         get() = synchronized(lock) { openId }
+
+    /** The version code the open session installs, or null when it is unknown or no session is open. */
+    val openTargetVersionCode: Long?
+        get() = synchronized(lock) { targetCode }
 
     /**
      * Closes [sessionId] and returns true if it was the open session. A second call for the same
@@ -59,6 +72,7 @@ internal class InstallSessions {
             false
         } else {
             openId = null
+            targetCode = null
             busy = false
             deferredConfirmation = null
             true

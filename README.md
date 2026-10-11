@@ -494,6 +494,16 @@ These are Android limits on devices that are not centrally managed. Renovo canno
 - **Play Protect may warn.** Google Play Protect may show a warning when an app installs an APK from outside a store. Renovo cannot suppress it.
 - **Updates keep your release process.** Every APK must be signed with the same key as the installed app, or Android refuses it. Renovo checks this first so it can give a clear reason.
 
+### Local update servers on Android 17
+
+An app that targets Android 17 (API 37) or higher cannot reach a private network address, such as `10.0.2.2` or a LAN address like `192.168.1.20`, without the `ACCESS_LOCAL_NETWORK` permission. The request times out. If the host app fetches its version file or APK from such an address, for example in a test setup with a server on a developer machine, it must declare the permission and, where the platform asks, request it at run time:
+
+```xml
+<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+```
+
+Renovo does not add this permission, because public HTTPS hosts do not need it. See Android's [local network permission](https://developer.android.com/privacy-and-security/local-network-permission) page.
+
 ### Out of scope
 
 Renovo does not do these, and will not:

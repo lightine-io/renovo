@@ -18,12 +18,14 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.core.view.WindowCompat
 import androidx.test.espresso.Espresso
 import io.lightine.renovo.ThemeMode
 import io.lightine.renovo.UpdateState
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.dialogs.selfAndAncestors
 import io.lightine.renovo.ui.dialogs.str
+import io.lightine.renovo.ui.forced.ForcedUpdateWindow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -122,6 +124,29 @@ class ForcedUpdateWindowTest {
         val hostWindowViews = rule.activity.window.decorView
         assertTrue(ShadowDialog.getLatestDialog().window!!.decorView !== hostWindowViews)
         assertBackDoesNothing()
+    }
+
+    private fun barIconsOfTheForcedWindow(mode: ThemeMode): Pair<Boolean, Boolean> {
+        rule.setContent {
+            RenovoTheme(themeMode = mode, dynamicColor = false, colorSchemes = null, inheritHostTheme = false) {
+                ForcedUpdateWindow { Text(HOST_BUTTON) }
+            }
+        }
+        rule.waitForIdle()
+        val window = ShadowDialog.getLatestDialog().window!!
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        return controller.isAppearanceLightStatusBars to controller.isAppearanceLightNavigationBars
+    }
+
+    @Test
+    fun aLightForcedScreenGetsDarkBarIcons() {
+        // "Light" in the platform's naming means a light bar background, so dark icons.
+        assertEquals(true to true, barIconsOfTheForcedWindow(ThemeMode.Light))
+    }
+
+    @Test
+    fun aDarkForcedScreenGetsLightBarIcons() {
+        assertEquals(false to false, barIconsOfTheForcedWindow(ThemeMode.Dark))
     }
 
     private fun sameRoot(

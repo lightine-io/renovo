@@ -65,6 +65,7 @@ import io.lightine.renovo.ui.reasonRes
 @Composable
 internal fun ForcedTextColumn(
     width: WindowWidth,
+    tight: Boolean,
     info: UpdateInfo,
     installedVersionName: String,
     step: UpdateStep,
@@ -82,7 +83,7 @@ internal fun ForcedTextColumn(
     val textAlign = if (centered) TextAlign.Center else TextAlign.Start
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(SECTION_SPACING),
+        verticalArrangement = Arrangement.spacedBy(if (tight) TIGHT_SECTION_SPACING else SECTION_SPACING),
         horizontalAlignment = horizontal,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(HEADLINE_GAP), horizontalAlignment = horizontal) {
@@ -107,7 +108,11 @@ internal fun ForcedTextColumn(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        VersionsPill(installedVersionName = installedVersionName, requiredVersionName = info.versionName)
+        // The permission state on a compact window drops the pill: the versions have no use while the
+        // user turns a switch on, and the height is what keeps "Open settings" on screen (UI specification part 4, state 11).
+        if (!tight) {
+            VersionsPill(installedVersionName = installedVersionName, requiredVersionName = info.versionName)
+        }
         when (step) {
             UpdateStep.WaitingForUser -> {
                 val notes = info.releaseNotes
@@ -149,6 +154,7 @@ internal fun ForcedTextColumn(
                 legacyPermissionStep = legacyPermissionStep,
                 onOpenSettings = onOpenSettings,
                 width = width,
+                tight = tight,
             )
 
             UpdateStep.Installing -> {
@@ -266,9 +272,13 @@ private fun PermissionBlock(
     legacyPermissionStep: Boolean,
     onOpenSettings: () -> Unit,
     width: WindowWidth,
+    tight: Boolean,
 ) {
     // Tighter than the other states: with the smaller shape the whole block has to fit without scrolling.
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(PERMISSION_SPACING)) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(if (tight) TIGHT_PERMISSION_SPACING else PERMISSION_SPACING),
+    ) {
         Text(
             text = stringResource(R.string.renovo_ui_permission_body),
             style = MaterialTheme.typography.bodyLarge,
@@ -371,6 +381,8 @@ private fun mobileDataLabel(sizeBytes: Long?): String {
 private val SECTION_SPACING = 24.dp
 private val HEADLINE_GAP = 12.dp
 private val PERMISSION_SPACING = 16.dp
+private val TIGHT_SECTION_SPACING = 12.dp
+private val TIGHT_PERMISSION_SPACING = 12.dp
 private val PROGRESS_SPACING = 12.dp
 private val PILL_HORIZONTAL_PADDING = 24.dp
 private val PILL_VERTICAL_PADDING = 14.dp

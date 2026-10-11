@@ -33,3 +33,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Fixed
 
 - Restored the review fixes that the hardening change had reverted (deferred install confirmation, canInstallNow re-check, no false unsupported on a mistimed tap, resume with a wrong size, empty APK as a failed file check).
+- Findings of the emulator acceptance run: the forced update screen sets its status and navigation bar icons to suit its own background, its permission state now fits without scrolling on a 411 x 731 dp phone, and an installer "aborted" status is reported as success when the new version is already installed.
