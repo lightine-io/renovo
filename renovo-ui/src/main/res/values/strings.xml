@@ -5,6 +5,7 @@
     <string name="renovo_ui_available_body">Version %1$s is ready to download. Your saved data stays on this device.</string>
     <string name="renovo_ui_whats_new">What\'s new</string>
     <string name="renovo_ui_version_line">Version %1$s - %2$s</string>
+    <string name="renovo_ui_version_line_no_size">Version %1$s</string>
     <string name="renovo_ui_later">Later</string>
     <string name="renovo_ui_update">Update</string>
     <string name="renovo_ui_keyboard_hint">Enter to update - Esc for later</string>

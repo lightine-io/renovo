@@ -127,6 +127,21 @@ subprojects {
                 // AGP has no public accessor for it.
                 inputJar.set(layout.buildDirectory.file("intermediates/aar_main_jar/release/syncReleaseLibJars/classes.jar"))
                 outputApiFile.set(layout.buildDirectory.file("api/$moduleName.api"))
+                // The Compose compiler caches each composable lambda that captures nothing in a
+                // generated ComposableSingletons class, one per source file. The class is public in
+                // bytecode even when the composable is internal, and no code can call it, so it is not
+                // part of the API. The validator matches whole class names only, so the names are
+                // derived from the source files (package = folder, as everywhere in this repository).
+                val sourceRoot = layout.projectDirectory.dir("src/main/kotlin").asFile
+                ignoredClasses.addAll(
+                    sourceRoot
+                        .walkTopDown()
+                        .filter { it.extension == "kt" }
+                        .map { file ->
+                            val packageName = file.parentFile.relativeTo(sourceRoot).path.replace(File.separatorChar, '.')
+                            "$packageName.ComposableSingletons\$${file.nameWithoutExtension}Kt"
+                        }.toList(),
+                )
                 dependsOn("syncReleaseLibJars")
             }
 
