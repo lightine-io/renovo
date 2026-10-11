@@ -96,27 +96,48 @@ android {
 }
 
 // The debug build (and the release build, with -PsampleTrustTestServer=true) trusts the test server
-// through res/raw/test_server.pem, which is created on each machine by the test server and never
-// committed. Failing early here is clearer than the resource
-// error the build would give later.
+// through res/raw/test_server.pem, which is created on each machine by the test server and is never
+// committed. A clean checkout, such as CI, has no such file, and the network security config still
+// needs the resource to exist. So when the real certificate is missing, a throw-away placeholder is
+// generated into the build folder and merged as a resource; it trusts nothing real and only keeps
+// the build green. The real file in src/debug/res/raw always wins, because the placeholder is only
+// written when it is absent.
 val testServerCertificate = layout.projectDirectory.file("src/debug/res/raw/test_server.pem")
-val checkTestServerCertificate =
-    tasks.register("checkTestServerCertificate") {
-        val certificate = testServerCertificate.asFile
+val placeholderCertificateDir = layout.buildDirectory.dir("generated/testServerCertificate")
+val prepareTestServerCertificate =
+    tasks.register<Exec>("prepareTestServerCertificate") {
+        val real = testServerCertificate.asFile
+        val outDir = placeholderCertificateDir.get().asFile
+        val keystore = File(outDir, "placeholder.p12")
+        val pem = File(outDir, "raw/test_server.pem")
+        onlyIf { !real.isFile && !pem.isFile }
+        outputs.dir(outDir)
+        doFirst {
+            pem.parentFile.mkdirs()
+            keystore.delete()
+            logger.warn("sample: no test server certificate at ${real.path}; using a placeholder that trusts nothing. See sample/README.md.")
+        }
+        val keytool = File(System.getProperty("java.home"), "bin/keytool").path
+        commandLine(
+            keytool, "-genkeypair", "-keystore", keystore.path, "-storetype", "PKCS12", "-storepass", "placeholder",
+            "-alias", "placeholder", "-keyalg", "RSA", "-keysize", "2048", "-validity", "1",
+            "-dname", "CN=renovo sample placeholder, O=placeholder",
+        )
         doLast {
-            if (!certificate.isFile) {
-                throw GradleException(
-                    "The debug build (and the release build with -PsampleTrustTestServer=true) needs the " +
-                        "test server's certificate at ${certificate.path}.\n" +
-                        "Start the test server once (see sample/README.md), then copy server.pem from its " +
-                        "cert folder (<served folder>/.cert/server.pem by default) to that path.",
-                )
-            }
+            ProcessBuilder(
+                keytool, "-exportcert", "-rfc", "-keystore", keystore.path, "-storetype", "PKCS12",
+                "-storepass", "placeholder", "-alias", "placeholder", "-file", pem.path,
+            ).inheritIO().start().waitFor().let { code -> check(code == 0) { "keytool -exportcert failed with $code" } }
+            keystore.delete()
         }
     }
+android.sourceSets.getByName("debug").res.srcDir(placeholderCertificateDir.get().asFile)
+if (sampleTrustTestServer) {
+    android.sourceSets.getByName("release").res.srcDir(placeholderCertificateDir.get().asFile)
+}
 tasks
     .matching { it.name == "preDebugBuild" || (sampleTrustTestServer && it.name == "preReleaseBuild") }
-    .configureEach { dependsOn(checkTestServerCertificate) }
+    .configureEach { dependsOn(prepareTestServerCertificate) }
 
 dependencies {
     implementation(project(":renovo-ui"))
