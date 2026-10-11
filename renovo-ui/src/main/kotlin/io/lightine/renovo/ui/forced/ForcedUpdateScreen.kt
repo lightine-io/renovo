@@ -19,15 +19,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.ForcedUpdateShape
@@ -89,24 +94,9 @@ internal fun ForcedUpdateScreen(
     BackHandler(enabled = true) {}
 
     val width = rememberWindowWidth()
-    val shapeSize = shapeSizeFor(width, permission = step == UpdateStep.PermissionNeeded)
+    val permission = step == UpdateStep.PermissionNeeded
     // One scroll state for the screen. It is saved with rememberSaveable inside, so a rotation keeps the position.
     val scroll = rememberScrollState()
-    val text: @Composable (Modifier) -> Unit = { textModifier ->
-        ForcedTextColumn(
-            width = width,
-            info = info,
-            installedVersionName = installedVersionName,
-            step = step,
-            isOnline = isOnline,
-            legacyPermissionStep = legacyPermissionStep,
-            onUpdateNow = onUpdateNow,
-            onTryAgain = onTryAgain,
-            onOpenSettings = onOpenSettings,
-            onUseMobileData = onUseMobileData,
-            modifier = textModifier,
-        )
-    }
 
     Surface(
         // The preview pass sees the key before any child does, so Escape is taken from a focused
@@ -115,11 +105,33 @@ internal fun ForcedUpdateScreen(
         color = MaterialTheme.colorScheme.surface,
     ) {
         // The safe drawing insets keep the content clear of cutouts, bars, and the on-screen keyboard.
-        Column(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+        // The constraints are measured inside them, so "short" means the room that is really left.
+        BoxWithConstraints(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+            // The permission state holds the most content. Only a short compact window gets the tight
+            // variant, so a tall phone keeps the full layout of the design (image 30).
+            val tight = width == WindowWidth.Compact && permission && maxHeight < TIGHT_BELOW_HEIGHT
+            val shapeSize = shapeSizeFor(width, permission = permission, tight = tight)
+            val text: @Composable (Modifier) -> Unit = { textModifier ->
+                ForcedTextColumn(
+                    width = width,
+                    tight = tight,
+                    info = info,
+                    installedVersionName = installedVersionName,
+                    step = step,
+                    isOnline = isOnline,
+                    legacyPermissionStep = legacyPermissionStep,
+                    onUpdateNow = onUpdateNow,
+                    onTryAgain = onTryAgain,
+                    onOpenSettings = onOpenSettings,
+                    onUseMobileData = onUseMobileData,
+                    modifier = textModifier,
+                )
+            }
             when (width) {
                 WindowWidth.Compact -> OneColumn(
                     scroll = scroll,
                     shapeSize = shapeSize,
+                    tight = tight,
                     modifier = Modifier.fillMaxWidth(),
                     text = text,
                 )
@@ -127,6 +139,7 @@ internal fun ForcedUpdateScreen(
                 WindowWidth.Medium -> OneColumn(
                     scroll = scroll,
                     shapeSize = shapeSize,
+                    tight = false,
                     modifier = Modifier.widthIn(max = MEDIUM_COLUMN_MAX_WIDTH).fillMaxWidth(),
                     text = text,
                 )
@@ -171,8 +184,32 @@ internal fun ForcedUpdateWindow(content: @Composable () -> Unit) {
             // The window spans the whole display; the screen keeps its content clear of the bars itself.
             decorFitsSystemWindows = false,
         ),
-        content = content,
+        content = {
+            BarIconsMatchBackground()
+            content()
+        },
     )
+}
+
+/**
+ * Sets the status and navigation bar icons of the dialog window to suit the surface behind them:
+ * dark icons on a light surface, light icons on a dark one. The window draws edge to edge over the
+ * host app, so the host's own bar appearance would otherwise show through, for example white icons
+ * on the near-white light screen.
+ *
+ * The window is gone when the screen is, so nothing is restored.
+ */
+@Composable
+private fun BarIconsMatchBackground() {
+    val view = LocalView.current
+    val lightSurface = MaterialTheme.colorScheme.surface.luminance() > LIGHT_SURFACE_LUMINANCE
+    SideEffect {
+        // The dialog's content view sits inside the dialog window, and the provider finds that window from it.
+        val window = (view.parent as? DialogWindowProvider)?.window ?: return@SideEffect
+        val controller = WindowCompat.getInsetsController(window, view)
+        controller.isAppearanceLightStatusBars = lightSurface
+        controller.isAppearanceLightNavigationBars = lightSurface
+    }
 }
 
 // The shape is smaller while the permission steps are shown, so the steps, the switch, and the
@@ -181,9 +218,18 @@ internal fun ForcedUpdateWindow(content: @Composable () -> Unit) {
 private fun shapeSizeFor(
     width: WindowWidth,
     permission: Boolean,
+    tight: Boolean,
 ): Dp = when (width) {
-    WindowWidth.Compact -> if (permission) 92.dp else 132.dp
+    WindowWidth.Compact -> if (tight) {
+        TIGHT_PERMISSION_SHAPE
+    } else if (permission) {
+        92.dp
+    } else {
+        132.dp
+    }
+
     WindowWidth.Medium -> if (permission) 132.dp else 168.dp
+
     WindowWidth.Expanded -> 240.dp
 }
 
@@ -191,19 +237,20 @@ private fun shapeSizeFor(
 private fun OneColumn(
     scroll: ScrollState,
     shapeSize: Dp,
+    tight: Boolean,
     modifier: Modifier,
     text: @Composable (Modifier) -> Unit,
 ) {
     // fillMaxSize before verticalScroll gives the content the window height as its minimum, so a
     // short screen is centered and a tall one scrolls.
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(scroll).padding(SCREEN_PADDING),
+        modifier = Modifier.fillMaxSize().verticalScroll(scroll).padding(if (tight) TIGHT_SCREEN_PADDING else SCREEN_PADDING),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
             ForcedUpdateShape(size = shapeSize)
-            Spacer(Modifier.height(SHAPE_GAP))
+            Spacer(Modifier.height(if (tight) TIGHT_SHAPE_GAP else SHAPE_GAP))
             text(Modifier.fillMaxWidth())
         }
     }
@@ -232,9 +279,16 @@ private fun TwoColumns(
     }
 }
 
+private const val LIGHT_SURFACE_LUMINANCE = 0.5f
 private val SCREEN_PADDING = 24.dp
 private val EXPANDED_PADDING = 32.dp
 private val SHAPE_GAP = 32.dp
+private val TIGHT_SCREEN_PADDING = 16.dp
+private val TIGHT_SHAPE_GAP = 16.dp
+private val TIGHT_PERMISSION_SHAPE = 72.dp
+
+// The full permission layout needs about 700 dp. Below this height the screen switches to the tight variant.
+private val TIGHT_BELOW_HEIGHT = 740.dp
 private val MEDIUM_COLUMN_MAX_WIDTH = 420.dp
 private val TEXT_COLUMN_WIDTH = 480.dp
 private val MIN_COLUMN_GAP = 40.dp

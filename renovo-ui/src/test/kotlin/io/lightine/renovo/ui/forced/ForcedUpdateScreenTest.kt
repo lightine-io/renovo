@@ -36,6 +36,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 // A phone-sized window tall enough for every state, so "displayed" means "on screen without scrolling".
 @RunWith(RobolectricTestRunner::class)
@@ -370,12 +371,46 @@ class ForcedUpdateScreenTest {
 
     // Fit and scroll
 
+    // The compact fit tests use the native graphics mode, which measures text with the real fonts. The
+    // default mode measures narrower text, so a layout that wraps on a device would still pass.
     @Test
-    fun thePermissionStateFitsWithoutScrollingOnACompactPhone() {
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun thePermissionStateFitsWithoutScrollingOnACompactPhone() = assertPermissionStateFits()
+
+    // The window of the acceptance run (API 24 and 26 emulators), where the button used to start below the fold.
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [37], qualifiers = "w411dp-h731dp-xhdpi")
+    fun thePermissionStateFitsWithoutScrollingOn411By731() = assertPermissionStateFits()
+
+    // The same phone with its 24 dp status bar and 48 dp navigation bar taken off. The test window has no
+    // system bars, but a device has, and safeDrawingPadding gives that room away.
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [37], qualifiers = "w411dp-h659dp-xhdpi")
+    fun thePermissionStateFitsWithoutScrollingOn411By731BelowTheSystemBars() = assertPermissionStateFits()
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [37], qualifiers = "az-w411dp-h731dp-xhdpi")
+    fun thePermissionStateFitsWithoutScrollingOn411By731InAzerbaijani() = assertPermissionStateFits()
+
+    // The tight variant drops the versions pill, which only a short compact window needs to do.
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [37], qualifiers = "w411dp-h731dp-xhdpi")
+    fun aShortCompactPermissionScreenDropsTheVersionsPillButKeepsTheRest() {
         show(UpdateStep.PermissionNeeded)
-        assertNoScrollLeft()
-        assertTextShown(str(R.string.renovo_ui_open_settings))
+        assertTextAbsent("${str(R.string.renovo_ui_forced_installed)} $INSTALLED_VERSION")
+        assertTextShown(str(R.string.renovo_ui_forced_headline))
+        assertTextShown(str(R.string.renovo_ui_forced_body))
+        assertTextShown(str(R.string.renovo_ui_permission_switch_label))
     }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [37], qualifiers = "w360dp-h640dp-xhdpi")
+    fun thePermissionStateFitsWithoutScrollingOn360By640() = assertPermissionStateFits()
 
     @Test
     @Config(sdk = [37], qualifiers = "w700dp-h960dp-xhdpi")
@@ -394,12 +429,28 @@ class ForcedUpdateScreenTest {
     }
 
     @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(sdk = [37], qualifiers = "w411dp-h731dp-xhdpi", fontScale = 1.5f)
+    fun aLargeFontScrollsThePermissionStateAndKeepsTheButtonReachable() {
+        show(UpdateStep.PermissionNeeded)
+        val range = rule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange)).fetchSemanticsNode()
+        assertTrue(range.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() > 0f)
+        rule.onNodeWithText(str(R.string.renovo_ui_open_settings)).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     @Config(sdk = [37], qualifiers = "w390dp-h300dp-xhdpi")
     fun aShortWindowScrollsSoNothingIsClipped() {
         show(UpdateStep.WaitingForNetwork(canUseMobileData = true))
         val button = str(R.string.renovo_ui_forced_mobile_data_button, formattedSize(SIZE_BYTES))
         rule.onNodeWithText(button).assertIsNotDisplayed()
         rule.onNodeWithText(button).performScrollTo().assertIsDisplayed()
+    }
+
+    private fun assertPermissionStateFits() {
+        show(UpdateStep.PermissionNeeded)
+        assertNoScrollLeft()
+        assertTextShown(str(R.string.renovo_ui_open_settings))
     }
 
     private fun assertNoScrollLeft() {

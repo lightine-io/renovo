@@ -1,9 +1,12 @@
 package io.lightine.renovo.sample
 
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import io.lightine.renovo.Renovo
 import io.lightine.renovo.UpdateListener
 import io.lightine.renovo.ui.attachUi
@@ -19,6 +22,7 @@ class LegacyActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_legacy)
+        keepContentBelowTheSystemBars(findViewById(R.id.legacyRoot))
         findViewById<TextView>(R.id.versionText).text =
             getString(R.string.version_line, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
         findViewById<Button>(R.id.closeButton).setOnClickListener { finish() }
@@ -26,6 +30,20 @@ class LegacyActivity : AppCompatActivity() {
         // After setContentView: attachUi adds its view on top of the content that is already there.
         Renovo.attachUi(this)
         Renovo.addListener(listener)
+    }
+
+    // The window draws edge to edge on Android 15 and later. android:fitsSystemWindows replaced the
+    // layout's own padding there and did not move the text, so the insets are added to the padding here.
+    private fun keepContentBelowTheSystemBars(root: View) {
+        val left = root.paddingLeft
+        val top = root.paddingTop
+        val right = root.paddingRight
+        val bottom = root.paddingBottom
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            view.setPadding(left + bars.left, top + bars.top, right + bars.right, bottom + bars.bottom)
+            insets
+        }
     }
 
     override fun onDestroy() {

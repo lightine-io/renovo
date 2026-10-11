@@ -71,6 +71,12 @@ class SessionInstallerTest {
     }
 
     @Test
+    fun `the open session remembers the version code it installs`() {
+        installer().install(apk(), info)
+        assertEquals(info.versionCode, sessions.openTargetVersionCode)
+    }
+
+    @Test
     fun `the status callback is a mutable broadcast to the receiver with the session id`() {
         installer().install(apk(), info)
         val sessionId = checkNotNull(sessions.openSessionId)

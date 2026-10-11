@@ -5,9 +5,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.content.IntentCompat
+import androidx.core.content.pm.PackageInfoCompat
 import io.lightine.renovo.Renovo
 import io.lightine.renovo.RenovoLogger
 import io.lightine.renovo.internal.ForegroundTracker
@@ -53,6 +55,7 @@ internal class InstallStatusHandler(
     private val foreground: ForegroundTracker,
     private val sessions: InstallSessions,
     private val canInstallNow: () -> Boolean = { true },
+    private val installedVersionCode: () -> Long? = { readInstalledVersionCode(context) },
 ) {
     fun handle(intent: Intent) {
         val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, NO_VALUE)
@@ -164,9 +167,22 @@ internal class InstallStatusHandler(
             // failed. The host app's owner must register the package name and signing key.
             logger?.log("The install was refused by developer verification: $verificationFailure.", null)
             finish(sessionId, InstallResult.Rejected)
+        } else if (installCompleted(sessionId)) {
+            // The system can report "aborted" for a session whose install went through, for example
+            // when the user leaves the Play Protect scan screen. The new version is what counts.
+            logger?.log("The installer reported the session as aborted, but the new version is installed.", null)
+            finish(sessionId, InstallResult.Success)
         } else {
             finish(sessionId, InstallResult.Cancelled)
         }
+    }
+
+    // False when the target is unknown (a session opened before this field existed) or the installed
+    // version cannot be read: then "aborted" keeps meaning "cancelled".
+    private fun installCompleted(sessionId: Int): Boolean {
+        if (!sessions.isOpen(sessionId)) return false
+        val target = sessions.openTargetVersionCode ?: return false
+        return installedVersionCode() == target
     }
 
     private fun finish(
@@ -184,6 +200,16 @@ internal class InstallStatusHandler(
         // Status codes are -1 to 8 and session ids are positive, so this value means "missing".
         const val NO_VALUE = Int.MIN_VALUE
     }
+}
+
+private fun readInstalledVersionCode(context: Context): Long? = try {
+    // The app's own package is always visible to it, so no <queries> entry is needed.
+    PackageInfoCompat.getLongVersionCode(context.packageManager.getPackageInfo(context.packageName, 0))
+} catch (e: PackageManager.NameNotFoundException) {
+    null
+} catch (e: RuntimeException) {
+    // A dead package manager must not turn a status broadcast into a crash of the host app.
+    null
 }
 
 /**

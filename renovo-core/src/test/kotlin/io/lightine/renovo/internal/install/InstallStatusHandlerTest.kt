@@ -31,7 +31,10 @@ class InstallStatusHandlerTest {
     private val sessions = InstallSessions().apply { opened(SESSION) }
     private val confirmation = Intent("android.content.pm.action.CONFIRM_INSTALL")
 
-    private fun handler(foreground: FakeForeground = FakeForeground()) = InstallStatusHandler(context, sink, logger, foreground, sessions)
+    private fun handler(
+        foreground: FakeForeground = FakeForeground(),
+        installedVersionCode: () -> Long? = { null },
+    ) = InstallStatusHandler(context, sink, logger, foreground, sessions, installedVersionCode = installedVersionCode)
 
     private fun status(
         status: Int,
@@ -59,6 +62,50 @@ class InstallStatusHandlerTest {
     fun `aborted means the user cancelled`() {
         handler().handle(status(PackageInstaller.STATUS_FAILURE_ABORTED))
         assertEquals(finished(InstallResult.Cancelled), sink.events)
+    }
+
+    @Test
+    fun `aborted is success when the version of the session is already installed`() {
+        sessions.opened(SESSION, targetVersionCode = 2L)
+        handler(installedVersionCode = { 2L }).handle(status(PackageInstaller.STATUS_FAILURE_ABORTED))
+
+        assertEquals(finished(InstallResult.Success), sink.events)
+        assertNull(sessions.openSessionId)
+        assertTrue(logger.contains("new version is installed"))
+    }
+
+    @Test
+    fun `aborted stays cancelled while the old version is installed`() {
+        sessions.opened(SESSION, targetVersionCode = 2L)
+        handler(installedVersionCode = { 1L }).handle(status(PackageInstaller.STATUS_FAILURE_ABORTED))
+        assertEquals(finished(InstallResult.Cancelled), sink.events)
+    }
+
+    @Test
+    fun `aborted stays cancelled when the installed version cannot be read`() {
+        sessions.opened(SESSION, targetVersionCode = 2L)
+        handler(installedVersionCode = { null }).handle(status(PackageInstaller.STATUS_FAILURE_ABORTED))
+        assertEquals(finished(InstallResult.Cancelled), sink.events)
+    }
+
+    @Test
+    fun `aborted stays cancelled when the session has no known target`() {
+        // The session of setUp has no target, so even a matching installed version proves nothing.
+        handler(installedVersionCode = { 2L }).handle(status(PackageInstaller.STATUS_FAILURE_ABORTED))
+        assertEquals(finished(InstallResult.Cancelled), sink.events)
+    }
+
+    @Test
+    @Config(sdk = [37])
+    fun `a developer verification rejection stays rejected even if the version matches`() {
+        sessions.opened(SESSION, targetVersionCode = 2L)
+        handler(installedVersionCode = { 2L }).handle(
+            status(PackageInstaller.STATUS_FAILURE_ABORTED).putExtra(
+                PackageInstaller.EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON,
+                PackageInstaller.DEVELOPER_VERIFICATION_FAILED_REASON_DEVELOPER_BLOCKED,
+            ),
+        )
+        assertEquals(finished(InstallResult.Rejected), sink.events)
     }
 
     @Test

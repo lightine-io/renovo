@@ -45,7 +45,7 @@ internal class SessionInstaller(
             return
         }
         try {
-            stagingExecutor.execute { stage(file) }
+            stagingExecutor.execute { stage(file, info.versionCode) }
         } catch (e: RuntimeException) {
             // The claim above must not outlive a request that never started.
             failBeforeSession(InstallResult.Rejected, "Could not start the install.", e)
@@ -54,7 +54,10 @@ internal class SessionInstaller(
 
     // Runs on a thread of our own. An exception that leaves it would reach the thread's handler,
     // which crashes the host app, so every RuntimeException is caught and turned into "rejected".
-    private fun stage(file: File) {
+    private fun stage(
+        file: File,
+        targetVersionCode: Long,
+    ) {
         val installer: PackageInstaller
         val length: Long
         try {
@@ -83,7 +86,7 @@ internal class SessionInstaller(
                 failBeforeSession(InstallResult.Rejected, "Could not create an installer session.", e)
                 return
             }
-        sessions.opened(sessionId)
+        sessions.opened(sessionId, targetVersionCode)
 
         val staged =
             runOrFail(sessionId, "Could not copy the APK into the installer session.") {
