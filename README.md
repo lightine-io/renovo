@@ -134,11 +134,12 @@ Only the first three fields are required.
 | `size` | no | APK size in bytes. Used only for display, such as the download size and the progress. A positive number. |
 | `mandatory` | no, default `false` | `true` makes this update a forced update for every older installed version. |
 | `minSupportedVersionCode` | no | Installed versions below this version code get a forced update. Versions at or above it get an optional one. |
-| `releaseNotes` | no | One string for every language, or an object with one string per language code. |
+| `releaseNotes` | no | One string for every language, or an object with one string per language code, such as `en` or `pt-BR`. |
 
 The rules:
 
-- **Release notes per language.** Renovo picks the device language, then `en`, then the first entry. A single string is used for every language.
+- **Release notes per language.** A key is a language code, optionally with a region, such as `pt` or `pt-BR`. Case does not matter, and `pt_BR` means the same as `pt-BR`. For a phone set to Brazilian Portuguese, Renovo picks `pt-BR`, then `pt`, then any other `pt-` key in file order, then `en` (or the first `en-` key when there is no plain `en`), then the first entry. A phone set to plain `pt` gets `pt`, or the first `pt-` key when there is no plain `pt`. A single string is used for every language.
+- **Which language counts.** The update UI uses the host app's language as its activity sees it, so a per-app language set on Android 13 and later is respected. The "Update ready" notification has no activity, so its texts come from the application context. On Android 12 and older, a language set only through AppCompat's per-app language support reaches activities, not the application context, so the notification may use the device language.
 - **Markdown subset.** Release notes may use `**bold**`, `*italic*`, lines that start with `- ` as bullets, `[text](https://...)` links, and line breaks. Everything else is shown as typed. Links open only if they are HTTPS.
 - **Unknown fields are ignored**, so the format can grow.
 - **A file that cannot be read** (broken JSON, a missing required field, a plain HTTP `apkUrl`, a file larger than 1 MiB or not in UTF-8) is a failed check, not a crash. Renovo tries again at the next check.
@@ -482,7 +483,7 @@ How Renovo treats your source:
 - To report a failed check, throw. An `IllegalArgumentException` counts as an answer that could not be read (`FailureReason.Parse`). Any other exception, such as an `IOException`, counts as a network failure (`FailureReason.Network`), and a background check is retried later with growing delays.
 - `versionHeaders` is not used with a `versionSource`. Your own client adds whatever headers it needs.
 
-Release notes: `ReleaseNotes("- Bug fixes")` is one text for every language. `ReleaseNotes.of("en" to "...", "az" to "...")` is one text per language code, and the first entry is the last fallback. `notes.forLanguage("az")` returns the text Renovo would pick.
+Release notes: `ReleaseNotes("- Bug fixes")` is one text for every language. `ReleaseNotes.of("en" to "...", "az" to "...")` is one text per language code, and the first entry is the last fallback. A code may carry a region, such as `"pt-BR"`. `notes.forLanguage("pt-BR")` returns the text Renovo would pick for that language tag, with the fallbacks described in [The version file](#the-version-file).
 
 #### Hand over version information you already have
 

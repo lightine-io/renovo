@@ -170,6 +170,24 @@ class VersionFileParserTest {
     }
 
     @Test
+    fun `reads release notes keyed by language and region`() {
+        val info =
+            VersionFileParser.parse(
+                """{"versionCode":1,"versionName":"1","apkUrl":"https://example.com/a.apk",
+                "releaseNotes":{"en":"E","pt-BR":"B"}}""",
+            )
+        assertEquals(ReleaseNotes.of("en" to "E", "pt-BR" to "B"), info.releaseNotes)
+        assertEquals("B", info.releaseNotes?.forLanguage("pt_br"))
+        assertEquals("B", info.releaseNotes?.forLanguage("pt"))
+    }
+
+    @Test
+    fun `rejects two release notes keys that differ only in case or separator`() {
+        val head = """{"versionCode":1,"versionName":"1","apkUrl":"https://example.com/a.apk","releaseNotes":"""
+        rejects("$head{\"pt-BR\":\"x\",\"pt_br\":\"y\"}}", "not allowed")
+    }
+
+    @Test
     fun `treats an empty release notes object as no notes`() {
         val info =
             VersionFileParser.parse("""{"versionCode":1,"versionName":"1","apkUrl":"https://example.com/a.apk","releaseNotes":{}}""")

@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Changed
 
 - The Azerbaijani texts are reworded to read more naturally.
+- Release notes keys may carry a region, such as `pt-BR`, and the lookup falls back from the region to the language to English.
 
 ### Fixed
 
