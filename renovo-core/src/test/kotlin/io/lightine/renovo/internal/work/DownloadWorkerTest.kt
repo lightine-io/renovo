@@ -477,6 +477,57 @@ internal class DownloadWorkerTest : WorkTestBase() {
     }
 
     @Test
+    fun `relative and query-only redirect targets are resolved against the current address`() {
+        val behavior = FileServerBehavior(body)
+        val server =
+            FakeServer { request ->
+                when (request.url.path) {
+                    "/dl/app-11.apk" -> FakeResponse(302, mapOf("Location" to "mirror/app.apk"))
+                    "/dl/mirror/app.apk" -> FakeResponse(307, mapOf("Location" to "?token=t1"))
+                    "/dl/mirror/" -> behavior.respond(request)
+                    else -> FakeResponse(404)
+                }
+            }
+        WorkEnvironment.connectionFactory = server.factory
+
+        val result = run(input(url = "https://example.com/dl/app-11.apk"))
+
+        assertEquals(ListenableWorker.Result.success(), result)
+        // java.net resolves a query-only target by RFC 2396 and keeps the folder, not the file name.
+        assertEquals(
+            listOf("https://example.com/dl/app-11.apk", "https://example.com/dl/mirror/app.apk", "https://example.com/dl/mirror/?token=t1"),
+            server.requests.map { it.url.toString() },
+        )
+    }
+
+    @Test
+    fun `a redirect target that is not a valid URL is refused as an invalid address`() {
+        val logs = CopyOnWriteArrayList<Pair<String, Throwable?>>()
+        WorkEnvironment.runtimeProvider = { FakeRuntime(sink, RenovoLogger { message, error -> logs += message to error }) }
+        val server = FakeServer { FakeResponse(302, mapOf("Location" to "https://[broken/app.apk")) }
+        WorkEnvironment.connectionFactory = server.factory
+
+        val result = run(input())
+
+        assertEquals(ListenableWorker.Result.failure(), result)
+        assertEquals(EngineEvent.DownloadFailed(11, FailureReason.Network), sink.events.last())
+        assertEquals("Only the first request was made", 1, server.requests.size)
+        assertTrue(logs.any { it.first.contains("The download address is not valid.") })
+    }
+
+    @Test
+    fun `a blank redirect target ends the download without repeating the request`() {
+        val server = FakeServer { FakeResponse(302, mapOf("Location" to " ")) }
+        WorkEnvironment.connectionFactory = server.factory
+
+        val result = run(input())
+
+        assertEquals(ListenableWorker.Result.failure(), result)
+        assertEquals(EngineEvent.DownloadFailed(11, FailureReason.Network), sink.events.last())
+        assertEquals(1, server.requests.size)
+    }
+
+    @Test
     fun `a redirect to http is refused for good`() {
         val server = FakeServer { FakeResponse(302, mapOf("Location" to "http://example.com/app.apk")) }
         WorkEnvironment.connectionFactory = server.factory

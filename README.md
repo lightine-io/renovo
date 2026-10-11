@@ -416,12 +416,12 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
-import java.net.URL
+import java.net.URI
 
 class BackendVersionSource(private val endpoint: String) : VersionSource {
     // Renovo calls this on a background thread, so a blocking call is fine here.
     override suspend fun latest(): UpdateInfo {
-        val connection = URL(endpoint).openConnection() as HttpURLConnection
+        val connection = URI(endpoint).toURL().openConnection() as HttpURLConnection
         try {
             connection.connectTimeout = 15_000
             connection.readTimeout = 30_000
@@ -772,7 +772,7 @@ Renovo.init(this) {
 
 | State | Meaning |
 |---|---|
-| `Idle` | Nothing is known yet. No check has finished since the app started. |
+| `Idle` | Nothing is known yet. No check has succeeded since the app started, and nothing was saved from an earlier run. A failed background check leaves this state. |
 | `Checking` | A check is running and no update is known yet. |
 | `UpToDate` | The installed version is the latest. |
 | `Available(info)` | A newer optional version exists and waits for `Renovo.startDownload()`. |
@@ -911,7 +911,7 @@ Enforcement started on 30 September 2026 in a first group of countries, and Goog
 What it means for you:
 
 - **The owner of the host app must register** the package name and the signing key, as a developer who distributes outside the Play Store. Renovo cannot do it for them. Do it before you ship the first Renovo update.
-- Renovo reports a verification failure as `FailureReason.InstallRejected` and writes the reason to your `logger`.
+- Renovo reports a verification failure as `FailureReason.InstallRejected`, and on Android 16.1 (API 36.1) and later writes the reason to your `logger`.
 - Google's page: [developer.android.com/developer-verification](https://developer.android.com/developer-verification).
 
 ## Requirements
