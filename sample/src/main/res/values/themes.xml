@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppCompatActivity throws without an AppCompat theme. The Compose screen draws its own
+         Material 3 colors, so this theme only has to be valid. -->
+    <style name="Theme.Sample" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>
