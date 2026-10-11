@@ -4,25 +4,15 @@
 # see only the directly declared dependencies. With it, the whole tree is checked for known
 # vulnerabilities (CVEs).
 #
-# Runs on push to main (keeps the baseline graph current) and on pull_request (so
-# dependency-review can compare the pull request's full graph - that job waits for this
-# submission via retry-on-snapshot-warnings).
-#
-# This is the "trusted pull requests" pattern from the gradle/actions docs: submit directly on
-# pull_request. Renovo's pull requests are same-repository branches, for which `contents: write`
-# is available. For a fork pull request GitHub downgrades the token to read-only, so the submit
-# step simply does nothing instead of escalating privilege. If pull requests from forks become
-# routine, switch to the fork-safe generate-and-upload plus workflow_run pattern from the same docs.
-#
-# First-party actions only (GitHub and Gradle), matching check.yml - no third-party scanner enters
-# the build.
+# Runs on push to main only. GitHub takes longer than ten minutes to make a pull request's
+# snapshot visible to the review API, so a per-PR review compared nothing; vulnerabilities are
+# caught after merge by Dependabot and before a release by the release gate (see SECURITY.md).
 
 name: dependency submission
 
 on:
   push:
     branches: [main]
-  pull_request:
 
 permissions:
   contents: write
