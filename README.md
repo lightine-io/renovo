@@ -247,14 +247,14 @@ Put `RenovoUpdateHost` inside your `MaterialTheme` (here `AppTheme`), so the upd
 
 | Screen | When it shows | How it goes away |
 |---|---|---|
-| Update available | A newer optional version exists and is not downloaded yet. This happens when `autoDownload = false`, or after the user cancelled a download. Shows the release notes, the version, and the size. | "Later" hides it until the next app start. "Update" starts the download. |
+| Update available | A newer optional version exists and is not downloaded yet. This happens when `autoDownload = false`, or after the user cancelled a download. Shows the release notes with the version and the size, when the version file has release notes. | "Later" hides it until the next app start. "Update" starts the download. |
 | Downloading | The user started the download. A background download shows nothing. | "Hide" hides it. The download continues. |
 | Ready to install | The file is downloaded and verified, and `canInstallNow` returns `true`. | "Not now" hides it until the next app start. "Install" installs. |
 | First-time permission | The user must allow installs from the host app. Explains the Android setting in three steps. | "Cancel" hides it until the next app start. "Open settings" opens the setting, and the update continues when the user comes back. |
 | Update not installed | Something the user started failed. Shows the reason. A failed background check shows nothing. | "Close" hides it. "Try again" retries. |
 | Forced update | A forced update exists. A full screen over the host app with the download progress, a network wait, the permission steps, a failure with "Try again", or the text for a device that cannot update. | **Cannot be dismissed.** Back and Esc do nothing. |
 
-A choice such as "Later" is kept for the version it was made for. A newer version asks again. Rotating, resizing, folding, or unfolding never brings back a screen the user put away, and never restarts a download.
+A choice such as "Later" is kept for the version it was made for, until the host app's process ends; Android may keep the process alive for a while after the user leaves the app. A newer version asks again. Rotating, resizing, folding, or unfolding never brings back a screen the user put away, and never restarts a download.
 
 More about the update UI:
 
@@ -594,7 +594,7 @@ canInstallNow = { !repository.hasUnsentData() }
 ```
 
 - Renovo calls it on the main thread right before every install, optional or forced. Keep it fast. An exception counts as `false`.
-- While it returns `false`, the update stays ready (`ReadyToInstall`, or `Required` waiting for the user). Renovo asks again at the next app start and at the next `Renovo.installIfReady()`.
+- While it returns `false`, the update stays ready (`ReadyToInstall`, or `Required` waiting for the user). The update UI asks again when it is about to show the dialog and whenever the activity resumes. Without the update UI, Renovo asks again at the next `Renovo.installIfReady()`.
 - The update UI shows its "Ready to install" dialog only while `canInstallNow` returns `true`. It asks when the dialog is about to show and every time the activity resumes.
 
 #### Download only when the user asks
@@ -883,6 +883,8 @@ These are Android limits on devices that are not centrally managed. Renovo canno
 - **Data migration is yours.** The host app migrates its own stored data between versions.
 - **Play Protect may warn.** Google Play Protect may show a warning when an app installs an APK from outside a store. Renovo cannot suppress it.
 - **Same signing key, always.** Every APK must be signed with the same key as the installed app, or Android refuses it. Renovo checks this first so it can give a clear reason.
+- **A v2 or newer APK signature is required.** An APK with only the old v1 (JAR) signature fails the file check with `HashMismatch`. Android's build tools add v2 and v3 signatures by default.
+- **Unsupported stays until the next version.** When device policy forbids installs from the host app, Renovo reports `Unsupported` and keeps that answer until a different version of the host app is installed, even if the policy is lifted later.
 
 **Local update servers on Android 17.** An app that targets Android 17 (API 37) or higher cannot reach a private network address, such as `10.0.2.2` or `192.168.1.20`, without the `ACCESS_LOCAL_NETWORK` permission. The request times out. If the host app fetches its version file or APK from such an address, for example in a test setup, declare the permission and, where the platform asks, request it at run time. Renovo does not add it, because public HTTPS hosts do not need it. See Android's [local network permission](https://developer.android.com/privacy-and-security/local-network-permission) page.
 
