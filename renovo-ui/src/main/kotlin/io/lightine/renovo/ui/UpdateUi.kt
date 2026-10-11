@@ -12,8 +12,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import io.lightine.renovo.DownloadProgress
 import io.lightine.renovo.FailureReason
+import io.lightine.renovo.Network
 import io.lightine.renovo.Renovo
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateState
@@ -77,9 +81,11 @@ internal class UpdateUiActions(
  * UpdateUi(state = state, canInstallNow = { true }, actions = UpdateUiActions.Default)
  * ```
  *
- * @param canInstallNow The host app's setting. Asked while composing, only for `ReadyToInstall`.
+ * @param canInstallNow The host app's setting, only for `ReadyToInstall`. Asked when the dialog is about to
+ *   show and again whenever the activity resumes, so a change to true shows the dialog on the next resume.
  * @param active False when another host is the one to draw (see [HostRegistry]).
  * @param isOnline Whether the device has a network, for the forced screen. Null asks the system.
+ * @param forcedDownloadNetwork The host app's `forcedDownloadNetwork`, for the waiting note of the forced screen.
  * @param installedVersionName The version name of the installed app, for the forced screen. Null asks the system.
  * @param legacyPermissionStep True on Android 7.0 and 7.1, where the permission setting is device-wide.
  * @param dismissed The choices that last until the next app start.
@@ -91,6 +97,7 @@ internal fun UpdateUi(
     actions: UpdateUiActions,
     active: Boolean = true,
     isOnline: Boolean? = null,
+    forcedDownloadNetwork: Network = Network.UnmeteredOnly,
     installedVersionName: String? = null,
     legacyPermissionStep: Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.O,
     dismissed: DismissedUpdates = DismissedUpdates.process,
@@ -124,7 +131,7 @@ internal fun UpdateUi(
         is UpdateState.Failed -> FailedUi(state.reason, state.info, state.userInitiated, active, actions, dismissed)
 
         is UpdateState.Required -> if (active) {
-            RequiredUi(state.info, state.step, isOnline, installedVersionName, legacyPermissionStep, actions)
+            RequiredUi(state.info, state.step, isOnline, forcedDownloadNetwork, installedVersionName, legacyPermissionStep, actions)
         }
 
         // The optional flow shows nothing in these. A forced update never leaves Required while it
@@ -190,8 +197,13 @@ private fun ReadyToInstallUi(
 ) {
     val code = info.versionCode
     var notNow by rememberSaveable(code) { mutableStateOf(false) }
+    // The host's answer can change while the activity is in the background, and nothing in Compose
+    // would notice. Reading the lifecycle state recomposes this branch at every resume, so the host
+    // is asked again then. A stopped activity shows no dialog, so the host is not asked while stopped.
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val started = lifecycleState.isAtLeast(Lifecycle.State.STARTED)
     // The host's check goes last, so it runs only when the dialog could be drawn.
-    if (!active || notNow || dismissed.isDismissed(Dismissal.NotNow, code) || !canInstallNow()) return
+    if (!active || !started || notNow || dismissed.isDismissed(Dismissal.NotNow, code) || !canInstallNow()) return
     ReadyToInstallDialog(
         info = info,
         onNotNow = {
@@ -255,6 +267,7 @@ private fun RequiredUi(
     info: UpdateInfo,
     step: UpdateStep,
     isOnline: Boolean?,
+    forcedDownloadNetwork: Network,
     installedVersionName: String?,
     legacyPermissionStep: Boolean,
     actions: UpdateUiActions,
@@ -266,6 +279,7 @@ private fun RequiredUi(
             installedVersionName = installedVersionName ?: rememberInstalledVersionName(),
             step = step,
             isOnline = isOnline ?: rememberIsOnline(),
+            forcedDownloadNetwork = forcedDownloadNetwork,
             legacyPermissionStep = legacyPermissionStep,
             onUpdateNow = actions.startDownload,
             onTryAgain = actions.startDownload,

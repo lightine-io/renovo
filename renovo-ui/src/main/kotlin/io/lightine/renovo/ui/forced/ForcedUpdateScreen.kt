@@ -33,6 +33,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
+import io.lightine.renovo.Network
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.ForcedUpdateShape
@@ -59,6 +60,7 @@ import io.lightine.renovo.ui.rememberWindowWidth
  *     installedVersionName = "1.6.2",
  *     step = UpdateStep.WaitingForUser,
  *     isOnline = true,
+ *     forcedDownloadNetwork = Network.Any,
  *     legacyPermissionStep = false,
  *     onUpdateNow = { Renovo.startDownload() },
  *     onTryAgain = { Renovo.startDownload() },
@@ -70,6 +72,7 @@ import io.lightine.renovo.ui.rememberWindowWidth
  * @param info The required version, with the release notes and the size.
  * @param installedVersionName The version name of the installed app.
  * @param isOnline False shows the offline note while the screen waits for the user.
+ * @param forcedDownloadNetwork The host app's `forcedDownloadNetwork`. `UnmeteredOnly` makes the waiting note name Wi-Fi.
  * @param legacyPermissionStep True on Android 7.0 and 7.1 (API 24-25), where step 2 names "unknown sources".
  * @param onUpdateNow Called for "Update now" and for Enter while it has focus.
  * @param onTryAgain Called for "Try again".
@@ -82,6 +85,7 @@ internal fun ForcedUpdateScreen(
     installedVersionName: String,
     step: UpdateStep,
     isOnline: Boolean,
+    forcedDownloadNetwork: Network,
     legacyPermissionStep: Boolean,
     onUpdateNow: () -> Unit,
     onTryAgain: () -> Unit,
@@ -119,6 +123,7 @@ internal fun ForcedUpdateScreen(
                     installedVersionName = installedVersionName,
                     step = step,
                     isOnline = isOnline,
+                    forcedDownloadNetwork = forcedDownloadNetwork,
                     legacyPermissionStep = legacyPermissionStep,
                     onUpdateNow = onUpdateNow,
                     onTryAgain = onTryAgain,

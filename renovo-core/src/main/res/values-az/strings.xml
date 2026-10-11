@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="renovo_download_channel_name">Yeniləmə yükləmələri</string>
+    <string name="renovo_download_channel_name">Yeniləmələrin yüklənməsi</string>
     <string name="renovo_download_notification_title">Yeniləmə yüklənir</string>
     <string name="renovo_download_notification_progress">%1$s / %2$s</string>
 </resources>

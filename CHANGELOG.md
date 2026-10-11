@@ -29,7 +29,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Sample app that updates itself from the local test server through both UI entry points, with scripts that build version 1 and 2 and lay out the server folder for every acceptance criterion.
 - README with the quick start, the version file format, every setting, the update states, the update UI, notifications, the permissions the library adds, behavior per Android version, known limits, developer verification, and requirements.
 
+### Changed
+
+- Azerbaijani texts reworded to read more naturally.
+
 ### Fixed
 
 - Restored the review fixes that the hardening change had reverted (deferred install confirmation, canInstallNow re-check, no false unsupported on a mistimed tap, resume with a wrong size, empty APK as a failed file check).
 - Findings of the emulator acceptance run: the forced update screen sets its status and navigation bar icons to suit its own background, its permission state now fits without scrolling on a 411 x 731 dp phone, and an installer "aborted" status is reported as success when the new version is already installed.
+- The forced update screen names Wi-Fi in its waiting note only when `forcedDownloadNetwork` is `Network.UnmeteredOnly`. For `NotRoaming` and `Any` it now says it is waiting for a network.
+- The update UI asks `canInstallNow` again whenever the activity resumes, so the "Ready to install" dialog appears once the host app allows it instead of at some later recomposition.

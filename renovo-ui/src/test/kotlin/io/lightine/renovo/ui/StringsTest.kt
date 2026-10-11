@@ -98,21 +98,21 @@ class StringsTest {
         val context = contextFor("az")
         val table =
             listOf(
-                Triple(R.string.renovo_ui_available_headline, emptyList<String>(), "Yeniləmə mövcuddur"),
+                Triple(R.string.renovo_ui_available_headline, emptyList<String>(), "Yeniləmə var"),
                 Triple(
                     R.string.renovo_ui_available_body,
                     listOf("1.8.0"),
-                    "1.8.0 versiyası yüklənməyə hazırdır. Saxlanılmış məlumatlarınız bu cihazda qalır.",
+                    "1.8.0 versiyasını yükləyə bilərsiniz. Saxlanılmış məlumatlarınız silinməyəcək.",
                 ),
                 Triple(R.string.renovo_ui_version_line, listOf("1.8.0", "24 MB"), "Versiya 1.8.0 - 24 MB"),
                 Triple(R.string.renovo_ui_keyboard_hint, emptyList<String>(), "Enter - yenilə, Esc - sonra"),
                 Triple(R.string.renovo_ui_download_size, listOf("6 MB", "24 MB"), "6 MB / 24 MB"),
-                Triple(R.string.renovo_ui_download_progress_description, listOf("25"), "Yükləmə gedişatı, 25 faiz"),
+                Triple(R.string.renovo_ui_download_progress_description, listOf("25"), "25 faiz yüklənib"),
                 Triple(R.string.renovo_ui_ready_headline, emptyList<String>(), "Quraşdırmağa hazırdır"),
                 Triple(
                     R.string.renovo_ui_ready_verified,
                     emptyList<String>(),
-                    "Yoxlanıldı - fayl bütövdür və eyni naşirə məxsusdur",
+                    "Yoxlanıldı - fayl zədələnməyib və eyni naşirdəndir",
                 ),
                 Triple(R.string.renovo_ui_not_now, emptyList<String>(), "İndi yox"),
                 Triple(

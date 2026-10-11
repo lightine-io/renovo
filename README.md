@@ -209,7 +209,7 @@ versionHeaders = { mapOf("Authorization" to "Bearer ${tokens.current()}") }
 
 ### Choose when an install may start
 
-`canInstallNow` runs on the main thread right before every install. If it returns `false`, the update stays in the `ReadyToInstall` state. Renovo asks again at the next app start and at the next `Renovo.installIfReady()`. The update UI shows its "Ready to install" dialog only while `canInstallNow` returns `true`.
+`canInstallNow` runs on the main thread right before every install. If it returns `false`, the update stays in the `ReadyToInstall` state. Renovo asks again at the next app start and at the next `Renovo.installIfReady()`. The update UI shows its "Ready to install" dialog only while `canInstallNow` returns `true`. It asks when the dialog is about to show and again whenever the activity resumes, so a change to `true` shows the dialog when the user comes back to the app.
 
 ```kotlin
 canInstallNow = { !repository.hasUnsentData() }

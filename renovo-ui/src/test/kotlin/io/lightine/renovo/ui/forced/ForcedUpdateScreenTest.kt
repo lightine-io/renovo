@@ -12,6 +12,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.pressKey
 import androidx.test.espresso.Espresso
 import io.lightine.renovo.DownloadProgress
 import io.lightine.renovo.FailureReason
+import io.lightine.renovo.Network
 import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.UpdateStep
 import io.lightine.renovo.ui.R
@@ -52,7 +54,8 @@ class ForcedUpdateScreenTest {
         info: UpdateInfo = forcedInfo(),
         isOnline: Boolean = true,
         legacyPermissionStep: Boolean = false,
-    ) = rule.setForcedContent(calls, step, info, isOnline, legacyPermissionStep)
+        forcedDownloadNetwork: Network = Network.UnmeteredOnly,
+    ) = rule.setForcedContent(calls, step, info, isOnline, legacyPermissionStep, forcedDownloadNetwork)
 
     private fun assertTextShown(text: String) = rule.onNodeWithText(text).assertIsDisplayed()
 
@@ -203,6 +206,32 @@ class ForcedUpdateScreenTest {
         show(UpdateStep.WaitingForNetwork(canUseMobileData = false))
         assertTextShown(str(R.string.renovo_ui_forced_waiting_note))
         assertNoButtons()
+    }
+
+    @Test
+    fun theWaitingNoteNamesWiFiWhenTheForcedDownloadWaitsForAnUnmeteredNetwork() {
+        show(UpdateStep.WaitingForNetwork(canUseMobileData = true), forcedDownloadNetwork = Network.UnmeteredOnly)
+        assertTextShown(str(R.string.renovo_ui_forced_waiting_note))
+        assertTextAbsent(str(R.string.renovo_ui_forced_waiting_note_any_network))
+    }
+
+    @Test
+    fun theWaitingNoteDoesNotNameWiFiWhenTheForcedDownloadMayUseANonRoamingNetwork() {
+        show(UpdateStep.WaitingForNetwork(canUseMobileData = false), forcedDownloadNetwork = Network.NotRoaming)
+        assertWaitingForAnyNetwork()
+    }
+
+    @Test
+    fun theWaitingNoteDoesNotNameWiFiWhenTheForcedDownloadMayUseAnyNetwork() {
+        show(UpdateStep.WaitingForNetwork(canUseMobileData = false), forcedDownloadNetwork = Network.Any)
+        assertWaitingForAnyNetwork()
+    }
+
+    private fun assertWaitingForAnyNetwork() {
+        assertTextShown(str(R.string.renovo_ui_forced_waiting_note_any_network))
+        assertTextShown("Waiting for a network. The update starts when the device is online.")
+        assertTextAbsent(str(R.string.renovo_ui_forced_waiting_note))
+        rule.onAllNodes(hasText("Wi-Fi", substring = true)).assertCountEquals(0)
     }
 
     @Test
