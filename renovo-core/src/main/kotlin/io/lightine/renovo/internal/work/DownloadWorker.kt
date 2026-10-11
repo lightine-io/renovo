@@ -89,7 +89,10 @@ internal class DownloadWorker(
                 freeSpace = WorkEnvironment.freeSpace ?: FreeSpace.forDevice(),
                 clock = WorkEnvironment.clock,
                 onProgress = { bytes, total ->
-                    events.send(EngineEvent.DownloadProgressed(input.versionCode, DownloadProgress(bytes, total)))
+                    // A server can announce, and send, an empty file. DownloadProgress takes no total of 0,
+                    // and the exception would end the worker without the engine ever hearing an outcome.
+                    val progress = DownloadProgress(bytes, total?.takeIf { it > 0 })
+                    events.send(EngineEvent.DownloadProgressed(input.versionCode, progress))
                     foreground?.update(bytes, total)
                 },
             )

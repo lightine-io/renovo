@@ -99,7 +99,11 @@ internal sealed interface EngineEvent {
         val result: InstallResult,
     ) : EngineEvent
 
-    /** The install was not started: `canInstallNow` returned false, or the app is not in the foreground. */
+    /**
+     * The install was not started: `canInstallNow` returned false, or the app is not in the
+     * foreground. Also sent when a session waiting for the user's confirmation was withdrawn because
+     * `canInstallNow` returned false by the time the user came back.
+     */
     data object InstallNotAllowedNow : EngineEvent
 
     /** The device offers no way to allow the install (policy, restriction, missing settings screen). */

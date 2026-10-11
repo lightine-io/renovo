@@ -32,6 +32,12 @@ internal class ActivityForegroundTracker(
     @Volatile
     private var resumed: WeakReference<Activity>? = null
 
+    // Set by the start that brings the app to the front, cleared by the resume that follows. The
+    // callbacks wait for that resume: a callback that launches a screen needs a resumed activity,
+    // and at the start the previous one was already cleared by its pause.
+    @Volatile
+    private var foregroundPending = false
+
     private val callbacks = CopyOnWriteArrayList<() -> Unit>()
 
     override val isInForeground: Boolean
@@ -54,12 +60,16 @@ internal class ActivityForegroundTracker(
                     if (recreating) {
                         recreating = false
                     } else {
-                        notifyForeground()
+                        foregroundPending = true
                     }
                 }
 
                 override fun onActivityResumed(activity: Activity) {
                     resumed = WeakReference(activity)
+                    if (foregroundPending) {
+                        foregroundPending = false
+                        notifyForeground()
+                    }
                 }
 
                 override fun onActivityPaused(activity: Activity) {

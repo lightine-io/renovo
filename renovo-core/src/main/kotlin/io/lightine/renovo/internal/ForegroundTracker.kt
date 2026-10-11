@@ -11,7 +11,8 @@ import android.app.Activity
  *   no activity leaks.
  * - The callback given to [onForeground] runs on the main thread every time the app comes to the
  *   foreground, so the runtime can re-check the install permission when the user returns from
- *   the settings screen.
+ *   the settings screen. It runs once the first activity has resumed, so [resumedActivity] is set
+ *   inside it and a callback can launch a screen from it.
  */
 internal interface ForegroundTracker {
     val isInForeground: Boolean

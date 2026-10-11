@@ -29,3 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Proof of coverage: one parameterized screenshot test renders all 12 states at three widths, two themes, and two languages plus compact landscape (156 images), with keyboard-only, rotation, no-clipping, and contrast tests.
 - Sample app that updates itself from the local test server through both UI entry points, with scripts that build version 1 and 2 and lay out the server folder for every acceptance criterion.
 - README with the quick start, the version file format, every setting, the update states, the update UI, notifications, the permissions the library adds, behavior per Android version, known limits, developer verification, and requirements.
+
+### Fixed
+
+- Restored the review fixes that the hardening change had reverted (deferred install confirmation, canInstallNow re-check, no false unsupported on a mistimed tap, resume with a wrong size, empty APK as a failed file check).
