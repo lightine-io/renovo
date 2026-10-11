@@ -5,6 +5,8 @@ import android.content.Context
 import io.lightine.renovo.internal.RenovoRuntime
 import io.lightine.renovo.internal.RuntimeFactory
 import io.lightine.renovo.internal.RuntimeHolder
+import io.lightine.renovo.internal.SafeLogger
+import io.lightine.renovo.internal.isMainProcess
 import kotlinx.coroutines.flow.StateFlow
 
 /**
@@ -43,6 +45,11 @@ public object Renovo {
      * Exactly one of `versionUrl` and `versionSource` must be set; invalid settings throw
      * [IllegalArgumentException]. A second call is ignored and logged.
      *
+     * It does nothing outside the host app's main process (the process named after the package),
+     * such as a `:remote` service process, so it is safe to call from `Application.onCreate` in
+     * every process. Invalid settings still throw there, and the other members still throw
+     * [IllegalStateException] there.
+     *
      * ```
      * Renovo.init(this) {
      *     versionUrl = "https://example.com/app/version.json"
@@ -54,10 +61,14 @@ public object Renovo {
         context: Context,
         configure: RenovoConfig.Builder.() -> Unit,
     ) {
-        holder.initialize {
-            val config = RenovoConfig.Builder().apply(configure).build()
-            runtimeFactory.create(context.applicationContext, config)
+        // Built before the process check, so a mistake in the settings fails in every process alike.
+        val config = RenovoConfig.Builder().apply(configure).build()
+        if (!isMainProcess(context)) {
+            // Another process would build a second engine that overwrites the main one's stored state.
+            SafeLogger.wrap(config.logger)?.log("Renovo.init was skipped: this is not the app's main process.", null)
+            return
         }
+        holder.initialize { runtimeFactory.create(context.applicationContext, config) }
     }
 
     /**

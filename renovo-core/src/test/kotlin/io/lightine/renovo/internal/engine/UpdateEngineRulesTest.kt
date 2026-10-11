@@ -23,7 +23,6 @@ import io.lightine.renovo.internal.engine.EngineEvent.InstallStarted
 import io.lightine.renovo.internal.engine.EngineEvent.PermissionGranted
 import io.lightine.renovo.internal.engine.EngineEvent.PermissionNeeded
 import io.lightine.renovo.internal.engine.EngineEvent.Restored
-import io.lightine.renovo.internal.engine.EngineEvent.Retry
 import io.lightine.renovo.internal.engine.EngineEvent.StartDownload
 import io.lightine.renovo.internal.engine.EngineEvent.Submit
 import io.lightine.renovo.internal.engine.EngineEvent.UseMobileDataOnce
@@ -80,7 +79,7 @@ class UpdateEngineRulesTest {
 
     @Test
     fun `FR-19 a stored forced update blocks again right after a restart, before any check`() {
-        val harness = EngineHarness(MANUAL, snapshot = Snapshot(latest = FORCED, lastInstalledVersionCode = INSTALLED))
+        val harness = EngineHarness(MANUAL, snapshot = Snapshot(latest = FORCED))
 
         assertEquals(UpdateState.Required(FORCED, UpdateStep.WaitingForUser), harness.state)
     }
@@ -106,7 +105,7 @@ class UpdateEngineRulesTest {
             PermissionGranted,
             InstallStarted,
             InstallFinished(InstallResult.Cancelled),
-            Retry,
+            StartDownload,
             InstallNotAllowedNow,
             InstallIfReady,
             InstallStarted,
@@ -514,7 +513,6 @@ class UpdateEngineRulesTest {
 
         assertEquals(UpdateState.Idle, harness.state)
         assertEquals(listOf(Effect.ScheduleChecks, Effect.StartCheck(false)), harness.startEffects.withoutPersist())
-        assertEquals(INSTALLED, harness.startEffects.lastPersisted()?.lastInstalledVersionCode)
     }
 
     @Test
@@ -544,7 +542,6 @@ class UpdateEngineRulesTest {
         assertTrue(Effect.ScheduleChecks in effects)
         val saved = effects.lastPersisted()
         assertNull(saved?.download)
-        assertEquals(11L, saved?.lastInstalledVersionCode)
     }
 
     @Test
@@ -599,6 +596,104 @@ class UpdateEngineRulesTest {
         assertNull(harness.snapshot.rejected)
     }
 
+    // ---- Downloads the user cancelled ----
+
+    @Test
+    fun `a download the user cancelled goes back to available at once`() {
+        val harness = EngineHarness(AUTO)
+        harness.send(found(OPTIONAL), DownloadProgressed(11, DownloadProgress(400, 1000)))
+
+        harness.send(DownloadFailed(11, FailureReason.Cancelled))
+
+        assertEquals(UpdateState.Available(OPTIONAL), harness.state)
+        assertEquals(Rejection(OPTIONAL, FailureReason.Cancelled), harness.snapshot.rejected)
+        assertNull(harness.snapshot.download)
+    }
+
+    @Test
+    fun `a download the user cancelled is not started again by the next check`() {
+        val harness = EngineHarness(AUTO)
+        harness.send(found(OPTIONAL), DownloadFailed(11, FailureReason.Cancelled))
+
+        val effects = harness.send(CheckStarted(false), found(OPTIONAL))
+
+        assertTrue(effects.none { it is Effect.EnqueueDownload })
+        assertEquals(UpdateState.Available(OPTIONAL), harness.state)
+        assertEquals(Rejection(OPTIONAL, FailureReason.Cancelled), harness.snapshot.rejected)
+    }
+
+    @Test
+    fun `startDownload restarts a download the user cancelled, and its file is not held back`() {
+        val harness = EngineHarness(AUTO)
+        harness.send(found(OPTIONAL), DownloadFailed(11, FailureReason.Cancelled), CheckStarted(false), found(OPTIONAL))
+
+        val effects = harness.send(StartDownload)
+
+        assertTrue(Effect.EnqueueDownload(OPTIONAL, Network.Any, true) in effects)
+        assertEquals(UpdateState.Downloading(OPTIONAL, DownloadProgress(0, 1000), userInitiated = true), harness.state)
+        assertNull(harness.snapshot.rejected)
+
+        // A check while it runs does not stop it, and the finished file is verified and offered for install.
+        harness.send(CheckStarted(false), found(OPTIONAL), DownloadFinished(11, PATH), VerificationPassed(11, PATH))
+        assertEquals(UpdateState.ReadyToInstall(OPTIONAL), harness.state)
+    }
+
+    @Test
+    fun `a cancelled download is still available after a restart`() {
+        val first = EngineHarness(AUTO)
+        first.send(found(OPTIONAL), DownloadFailed(11, FailureReason.Cancelled))
+
+        val restarted = EngineHarness(AUTO, snapshot = first.snapshot)
+
+        assertTrue(restarted.startEffects.none { it is Effect.EnqueueDownload })
+        assertEquals(UpdateState.Available(OPTIONAL), restarted.state)
+        val effects = restarted.send(CheckStarted(false), found(OPTIONAL))
+        assertTrue(effects.none { it is Effect.EnqueueDownload })
+        assertEquals(UpdateState.Available(OPTIONAL), restarted.state)
+
+        assertTrue(Effect.EnqueueDownload(OPTIONAL, Network.Any, true) in restarted.send(StartDownload))
+        assertNull(restarted.snapshot.rejected)
+    }
+
+    @Test
+    fun `a cancelled forced download waits for the user's tap, before and after a restart`() {
+        val harness = EngineHarness(AUTO)
+        harness.send(found(FORCED), DownloadFailed(11, FailureReason.Cancelled))
+
+        assertEquals(UpdateState.Required(FORCED, UpdateStep.WaitingForUser), harness.state)
+        val restarted = EngineHarness(AUTO, snapshot = harness.snapshot)
+        assertTrue(restarted.startEffects.none { it is Effect.EnqueueDownload })
+        assertEquals(UpdateState.Required(FORCED, UpdateStep.WaitingForUser), restarted.state)
+
+        val effects = restarted.send(StartDownload)
+
+        assertTrue(Effect.EnqueueDownload(FORCED, Network.Any, true) in effects)
+        assertEquals(UpdateState.Required(FORCED, UpdateStep.Downloading(DownloadProgress(0, 1000))), restarted.state)
+        assertNull(restarted.snapshot.rejected)
+    }
+
+    @Test
+    fun `a cancel does not hold back a newer version`() {
+        val harness = EngineHarness(AUTO)
+        harness.send(found(OPTIONAL), DownloadFailed(11, FailureReason.Cancelled))
+
+        val newer = info(versionCode = 12)
+        val effects = harness.send(found(newer))
+
+        assertTrue(Effect.EnqueueDownload(newer, Network.Any, false) in effects)
+        assertNull(harness.snapshot.rejected)
+    }
+
+    @Test
+    fun `a network failure of a download is not remembered as a cancel`() {
+        val harness = EngineHarness(AUTO)
+        harness.send(found(OPTIONAL), DownloadFailed(11, FailureReason.Network))
+
+        assertNull(harness.snapshot.rejected)
+        val effects = harness.send(CheckStarted(false), found(OPTIONAL))
+        assertTrue(Effect.EnqueueDownload(OPTIONAL, Network.Any, false) in effects)
+    }
+
     // ---- ETag and submit ----
 
     @Test
@@ -606,7 +701,7 @@ class UpdateEngineRulesTest {
         val harness = EngineHarness(MANUAL)
         val effects = harness.send(found(OPTIONAL, etag = "\"v11\""))
 
-        assertEquals(Snapshot(etag = "\"v11\"", latest = OPTIONAL, lastInstalledVersionCode = INSTALLED), effects.lastPersisted())
+        assertEquals(Snapshot(etag = "\"v11\"", latest = OPTIONAL), effects.lastPersisted())
 
         harness.send(CheckStarted(false), CheckNotModified)
         assertEquals(UpdateState.Available(OPTIONAL), harness.state)

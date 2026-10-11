@@ -32,6 +32,9 @@ public enum class FailureReason {
     /** The system rejected the install. */
     InstallRejected,
 
-    /** The user cancelled the install. */
+    /**
+     * The user cancelled the install. A download the user cancels from its notification is not a
+     * failure: the update goes back to available, and [Renovo.startDownload] starts it again.
+     */
     Cancelled,
 }

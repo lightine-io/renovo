@@ -214,7 +214,7 @@ internal class DownloadWorkerTest : WorkTestBase() {
     }
 
     @Test
-    fun `not enough free space reports Storage without a request`() {
+    fun `not enough free space for the server's length reports Storage before a byte is written`() {
         val server = serve()
         WorkEnvironment.freeSpace = FreeSpace { _, _ -> 1_000 }
 
@@ -222,7 +222,22 @@ internal class DownloadWorkerTest : WorkTestBase() {
 
         assertEquals(ListenableWorker.Result.failure(), result)
         assertEquals(EngineEvent.DownloadFailed(11, FailureReason.Storage), sink.events.last())
-        assertTrue(server.requests.isEmpty())
+        assertEquals(1, server.requests.size)
+        assertFalse(files.part(11).exists())
+        assertFalse(files.apk(11).exists())
+    }
+
+    @Test
+    fun `an announced size larger than the free space does not stop a file that fits`() {
+        // The version file's size is a display hint. Only the length the server sends is checked for room.
+        serve()
+        WorkEnvironment.freeSpace = FreeSpace { _, _ -> body.size.toLong() + 1 }
+
+        val result = run(input(size = 10_000_000_000L))
+
+        assertEquals(ListenableWorker.Result.success(), result)
+        assertArrayEquals(body, files.apk(11).readBytes())
+        assertTrue(sink.events.none { it is EngineEvent.DownloadFailed })
     }
 
     @Test
@@ -388,26 +403,45 @@ internal class DownloadWorkerTest : WorkTestBase() {
     }
 
     @Test
-    fun `a finished file of the wrong size is replaced`() {
+    fun `a finished file whose length differs from the announced size is reported without a request`() {
+        // The size in the version file may be wrong. The verifier's checks decide whether the file is good.
         files.ensureDirectory()
         files.apk(11).writeBytes(ByteArray(10))
-        serve()
-
-        run(input())
-
-        assertArrayEquals(body, files.apk(11).readBytes())
-    }
-
-    @Test
-    fun `a complete partial file is finished without a request`() {
-        // The process died between the last byte and the rename.
-        writePartial(11, body)
         val server = serve()
 
         val result = run(input())
 
         assertEquals(ListenableWorker.Result.success(), result)
         assertTrue(server.requests.isEmpty())
+        assertEquals(10L, files.apk(11).length())
+        assertEquals(EngineEvent.DownloadFinished(11, files.apk(11).path), sink.events.last())
+    }
+
+    @Test
+    fun `a complete partial file is checked with the server, not finished on its length`() {
+        // The process died between the last byte and the rename. The server answers the range after
+        // the end with a 416, and the file is fetched again from the start.
+        writePartial(11, body)
+        val server = serve()
+
+        val result = run(input())
+
+        assertEquals(ListenableWorker.Result.success(), result)
+        assertEquals(2, server.requests.size)
+        assertEquals("bytes=${body.size}-", server.requests[0].headers["range"])
+        assertArrayEquals(body, files.apk(11).readBytes())
+    }
+
+    @Test
+    fun `a partial file as long as a wrong announced size is resumed, not taken for the whole file`() {
+        val announced = 100_000L
+        writePartial(11, body.copyOfRange(0, announced.toInt()))
+        val server = serve()
+
+        val result = run(input(size = announced))
+
+        assertEquals(ListenableWorker.Result.success(), result)
+        assertEquals("bytes=$announced-", server.requests.single().headers["range"])
         assertArrayEquals(body, files.apk(11).readBytes())
     }
 

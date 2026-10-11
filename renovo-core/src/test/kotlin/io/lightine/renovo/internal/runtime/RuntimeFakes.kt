@@ -239,7 +239,9 @@ internal class FakeForeground(
     @Volatile
     override var resumedActivity: Activity? = if (isInForeground) newActivity() else null
     private val callbacks = CopyOnWriteArrayList<() -> Unit>()
+    private val resumeCallbacks = CopyOnWriteArrayList<() -> Unit>()
 
+    /** Callbacks registered with [onForeground]. */
     val callbackCount: Int
         get() = callbacks.size
 
@@ -247,11 +249,16 @@ internal class FakeForeground(
         callbacks += callback
     }
 
+    override fun onResumed(callback: () -> Unit) {
+        resumeCallbacks += callback
+    }
+
     /** What the real tracker does when the user brings the app back: an activity resumes, then the callbacks run. */
     fun comeToForeground() {
         isInForeground = true
         if (resumedActivity == null) resumedActivity = newActivity()
         callbacks.forEach { it() }
+        resumeCallbacks.forEach { it() }
     }
 
     /** What the real tracker sees when the user leaves the app. */

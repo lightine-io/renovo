@@ -34,19 +34,31 @@ internal class FakeForeground(
     override var isInForeground: Boolean = resumedActivity != null,
 ) : ForegroundTracker {
     private val callbacks = mutableListOf<() -> Unit>()
+    private val resumeCallbacks = mutableListOf<() -> Unit>()
 
     val callbackCount: Int
-        get() = callbacks.size
+        get() = callbacks.size + resumeCallbacks.size
 
     override fun onForeground(callback: () -> Unit) {
         callbacks += callback
     }
 
-    /** What the real tracker does when an activity of the app resumes. */
+    override fun onResumed(callback: () -> Unit) {
+        resumeCallbacks += callback
+    }
+
+    /** What the real tracker does when the app returns from the background: an activity resumes. */
     fun comeToForeground(activity: Activity) {
         resumedActivity = activity
         isInForeground = true
         callbacks.forEach { it() }
+        resumeCallbacks.forEach { it() }
+    }
+
+    /** What the real tracker does when an activity resumes while the app stayed in the foreground. */
+    fun resume(activity: Activity) {
+        resumedActivity = activity
+        resumeCallbacks.forEach { it() }
     }
 }
 

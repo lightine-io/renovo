@@ -40,6 +40,8 @@ internal class ActivityForegroundTracker(
 
     private val callbacks = CopyOnWriteArrayList<() -> Unit>()
 
+    private val resumeCallbacks = CopyOnWriteArrayList<() -> Unit>()
+
     override val isInForeground: Boolean
         get() = startedCount > 0 || recreating
 
@@ -48,6 +50,10 @@ internal class ActivityForegroundTracker(
 
     override fun onForeground(callback: () -> Unit) {
         callbacks.add(callback)
+    }
+
+    override fun onResumed(callback: () -> Unit) {
+        resumeCallbacks.add(callback)
     }
 
     init {
@@ -68,8 +74,11 @@ internal class ActivityForegroundTracker(
                     resumed = WeakReference(activity)
                     if (foregroundPending) {
                         foregroundPending = false
-                        notifyForeground()
+                        notify(callbacks)
                     }
+                    // Every resume, not only the one after a start: a system dialog pauses the activity
+                    // below it without stopping it, and its close resumes the activity with no start.
+                    notify(resumeCallbacks)
                 }
 
                 override fun onActivityPaused(activity: Activity) {
@@ -104,8 +113,8 @@ internal class ActivityForegroundTracker(
         if (resumed?.get() === activity) resumed = null
     }
 
-    private fun notifyForeground() {
-        for (callback in callbacks) {
+    private fun notify(targets: List<() -> Unit>) {
+        for (callback in targets) {
             // A failing callback must neither stop the others nor crash the host app's activity start.
             try {
                 callback()

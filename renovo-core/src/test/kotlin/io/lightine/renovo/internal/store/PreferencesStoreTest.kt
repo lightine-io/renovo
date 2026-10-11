@@ -9,6 +9,7 @@ import io.lightine.renovo.UpdateInfo
 import io.lightine.renovo.internal.engine.DownloadRecord
 import io.lightine.renovo.internal.engine.Rejection
 import io.lightine.renovo.internal.engine.Snapshot
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -72,7 +73,6 @@ class PreferencesStoreTest {
         mobileDataVersionCode = 41,
         rejected = Rejection(fullInfo(40, reordered), FailureReason.HashMismatch),
         unsupportedAtVersionCode = 39,
-        lastInstalledVersionCode = 38,
     )
 
     private fun storeRaw(
@@ -93,6 +93,29 @@ class PreferencesStoreTest {
         val snapshot = fullSnapshot()
         val store = store()
         store.save(snapshot)
+        assertEquals(snapshot, store.load())
+    }
+
+    @Test
+    fun oldDataWithLastInstalledVersionCodeStaysReadable() {
+        // Earlier versions wrote this field. Data saved by them must still load after an update.
+        val snapshot = fullSnapshot()
+        store().save(snapshot)
+        val old = JSONObject(checkNotNull(rawPreferences.getString("snapshot", null))).put("lastInstalledVersionCode", 38)
+        storeRaw(old.toString())
+
+        assertEquals(snapshot, store().load())
+        assertTrue(logged.isEmpty())
+    }
+
+    @Test
+    fun aCancelledDownloadRoundTripsByName() {
+        val snapshot = Snapshot(rejected = Rejection(fullInfo(40, null), FailureReason.Cancelled))
+        val store = store()
+        store.save(snapshot)
+
+        val stored = JSONObject(checkNotNull(rawPreferences.getString("snapshot", null)))
+        assertEquals("Cancelled", stored.getJSONObject("rejected").getString("reason"))
         assertEquals(snapshot, store.load())
     }
 

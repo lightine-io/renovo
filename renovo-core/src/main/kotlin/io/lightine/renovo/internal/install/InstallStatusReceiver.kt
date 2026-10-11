@@ -112,10 +112,13 @@ internal class InstallStatusHandler(
         // The reference asks to launch the confirmation only while the user is in the app. From
         // the background the launch would also be blocked by the background activity rules.
         if (foreground.isInForeground && launch(sessionId, confirmation)) return
-        logger?.log("The app is in the background. The install confirmation waits for the app to return.", null)
+        logger?.log("No activity of the app is resumed. The install confirmation waits for the next resume.", null)
         sessions.deferConfirmation(confirmation)
+        // The next resume, not the next return from the background: the status can arrive while the
+        // app is started but paused under a system dialog, and the user should not have to leave the
+        // app and come back to see the confirmation.
         if (sessions.claimForegroundHook()) {
-            foreground.onForeground { sessions.takeDeferredConfirmation()?.let { launchDeferred(it) } }
+            foreground.onResumed { sessions.takeDeferredConfirmation()?.let { launchDeferred(it) } }
         }
     }
 

@@ -13,6 +13,9 @@ import android.app.Activity
  *   foreground, so the runtime can re-check the install permission when the user returns from
  *   the settings screen. It runs once the first activity has resumed, so [resumedActivity] is set
  *   inside it and a callback can launch a screen from it.
+ * - The callback given to [onResumed] runs on the main thread after every activity resume, also
+ *   when the app never left the foreground (a system dialog that paused the activity was closed).
+ *   [resumedActivity] is set inside it.
  */
 internal interface ForegroundTracker {
     val isInForeground: Boolean
@@ -20,4 +23,6 @@ internal interface ForegroundTracker {
     val resumedActivity: Activity?
 
     fun onForeground(callback: () -> Unit)
+
+    fun onResumed(callback: () -> Unit)
 }

@@ -60,12 +60,13 @@ internal class ApkTransfer(
         if (!files.ensureDirectory()) throw StorageException("The download folder cannot be created.")
         for (round in 0..MAX_START_OVERS) {
             val resume = resumePoint()
-            // A crash between the last byte and the rename leaves a complete partial file. Asking the
-            // server for the range after the end would only draw a 416, so skip the request.
-            if (resume.offset > 0 && expectedSize != null && resume.offset == expectedSize) {
-                return@withContext finish(resume.offset)
-            }
-            if (expectedSize != null) requireSpace(expectedSize - resume.offset)
+            // Every partial file goes to the server, even one as long as the announced size. The size in
+            // the version file is a display hint and may be wrong, so a partial file of that length can
+            // be a cut-off copy of a larger file. Finishing it without asking would hand a truncated
+            // file to the verifier, which remembers it as rejected. The rare complete partial file (a
+            // crash between the last byte and the rename) costs one download from the start after the
+            // server's 416. Free space is checked against the server's length, in receive, before any
+            // byte is written.
             val bytes = attempt(resume)
             if (bytes != null) return@withContext finish(bytes)
             // The server answered 416, or a 206 for another range than the one asked for. The bytes on

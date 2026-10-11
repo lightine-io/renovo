@@ -112,6 +112,8 @@ internal class WorkDownloaderTest : WorkTestBase() {
         // A runtime is connected and the disk is full, so the worker fails for good and the work is finished.
         WorkEnvironment.runtimeProvider = { FakeRuntime(sink) }
         WorkEnvironment.freeSpace = FreeSpace { _, _ -> 0L }
+        // Room is checked against the length the server announces, so a server must answer.
+        WorkEnvironment.connectionFactory = FakeServer { FileServerBehavior(ByteArray(1000)).respond(it) }.factory
         enqueue()
         val first = activeWork()
         WorkManagerTestInitHelper.getTestDriver(context)?.setAllConstraintsMet(first.id)

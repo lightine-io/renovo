@@ -25,10 +25,11 @@ import org.json.JSONObject
  * ```
  * {"etag":"...","latest":{...info...},"download":{"info":{...},"filePath":"...","verified":true},
  *  "mobileDataVersionCode":42,"rejected":{"info":{...},"reason":"HashMismatch"},
- *  "unsupportedAtVersionCode":41,"lastInstalledVersionCode":40}
+ *  "unsupportedAtVersionCode":41}
  * ```
  * where `{...info...}` holds every [UpdateInfo] field and `releaseNotes` is an array of
- * `[language, text]` pairs.
+ * `[language, text]` pairs. Fields this version does not know, such as `lastInstalledVersionCode`
+ * written by earlier versions, are ignored, so old saved data stays readable.
  */
 internal class PreferencesStore(
     context: Context,
@@ -94,7 +95,6 @@ private fun snapshotToJson(snapshot: Snapshot): JSONObject = JSONObject().apply 
     snapshot.mobileDataVersionCode?.let { put("mobileDataVersionCode", it) }
     snapshot.rejected?.let { put("rejected", rejectionToJson(it)) }
     snapshot.unsupportedAtVersionCode?.let { put("unsupportedAtVersionCode", it) }
-    snapshot.lastInstalledVersionCode?.let { put("lastInstalledVersionCode", it) }
 }
 
 private fun downloadToJson(record: DownloadRecord): JSONObject = JSONObject().apply {
@@ -133,7 +133,6 @@ private fun snapshotFromJson(json: JSONObject): Snapshot = Snapshot(
     mobileDataVersionCode = json.optionalLong("mobileDataVersionCode"),
     rejected = json.optionalObject("rejected")?.let(::rejectionFromJson),
     unsupportedAtVersionCode = json.optionalLong("unsupportedAtVersionCode"),
-    lastInstalledVersionCode = json.optionalLong("lastInstalledVersionCode"),
 )
 
 private fun downloadFromJson(json: JSONObject): DownloadRecord = DownloadRecord(
