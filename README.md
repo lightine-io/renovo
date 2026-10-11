@@ -850,7 +850,7 @@ Renovo supports Android 7.0 (API 24) and later. It handles the differences for y
 | 14 and later (API 34+) | The foreground job for a user-started download needs the `dataSync` type and its permission. Renovo declares both. Renovo does not use install constraints ("gentle update") or claim update ownership: every install starts from a tap in the foreground. |
 | 15 and later (API 35+) | Edge-to-edge is enforced: apps draw behind the system bars. The update UI handles the window insets. |
 | 16 and later (API 36+) | Google's developer verification can stop an install. Renovo reports it as `InstallRejected`, and from API 36.1 it writes the reason the installer gives to your `logger`. See [Google developer verification](#google-developer-verification). |
-| 17 (API 37) | Advanced Protection Mode, an optional Android setting for high-risk users, blocks installs from unknown sources. Renovo reports the device as unsupported. |
+| 17 (API 37) | Advanced Protection Mode, an optional Android setting for high-risk users, blocks installs from unknown sources. Renovo reports the device as unsupported. On Android 17 and later, the permission dialog and the forced update screen show the "Always allow" choice instead of the switch, as the system screen does. |
 
 **When a self-update is silent (Android 12 and later).** Android skips the prompt only if all of these hold. Renovo asks for it, and Android decides:
 

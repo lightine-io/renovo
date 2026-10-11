@@ -30,8 +30,10 @@
     <string name="renovo_ui_permission_step_1">\"Parametrləri aç\" düyməsinə toxunun</string>
     <string name="renovo_ui_permission_step_2">Aşağıdakı açarı aktiv edin</string>
     <string name="renovo_ui_permission_step_2_legacy">Naməlum mənbələrdən quraşdırmanı aktiv edin</string>
+    <string name="renovo_ui_permission_step_2_android17">\"Həmişə icazə verin\" seçin</string>
     <string name="renovo_ui_permission_step_3">Geri qayıdın - yeniləmə davam edəcək</string>
     <string name="renovo_ui_permission_switch_label">Bu mənbədən icazə verin</string>
+    <string name="renovo_ui_permission_option_label">Həmişə icazə verin</string>
     <string name="renovo_ui_cancel">Ləğv et</string>
     <string name="renovo_ui_open_settings">Parametrləri aç</string>
 

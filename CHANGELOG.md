@@ -43,3 +43,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The `size` in the version file no longer decides anything. A wrong value can no longer fail a download for lack of space, finish a cut-off file, or throw away a finished one.
 - An install confirmation that had to wait now opens the next time an activity resumes. So it also appears after a system dialog closes, without the user leaving the app.
 - `Renovo.init` does nothing outside the host app's main process, so a `:remote` process no longer builds a second engine that overwrites the saved state.
+- The permission steps of the update UI match the Android 17 settings screen: step 2 and the picture show the "Always allow" choice instead of the switch.

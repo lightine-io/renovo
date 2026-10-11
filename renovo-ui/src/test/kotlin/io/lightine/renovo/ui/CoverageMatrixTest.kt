@@ -102,6 +102,7 @@ class CoverageMatrixTest(
                         isOnline = case.scenario.isOnline,
                         installedVersionName = INSTALLED_VERSION_NAME,
                         legacyPermissionStep = false,
+                        android17PermissionStep = false,
                         dismissed = DismissedUpdates(),
                     )
                 }

@@ -22,7 +22,8 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * The tight variant of the forced permission state (UI specification part 4, state 11): a 411 x 731
  * dp phone loses about 72 dp to its bars, which leaves a 411 x 659 dp window. The coverage matrix
- * has only the 390 x 844 dp phone, which keeps the full layout, so this shows the short one.
+ * has only the 390 x 844 dp phone, which keeps the full layout, so this shows the short one, with
+ * the switch of Android 8 to 16 and with the "Always allow" choice of Android 17.
  *
  * Record with `./gradlew :renovo-ui:recordRoborazziDebug`, check with `verifyRoborazziDebug`.
  */
@@ -42,13 +43,20 @@ class ForcedPermissionTightScreenshotTest {
     @Test
     fun theShortCompactPermissionStateInAzerbaijani() = capture("az-w411dp-h659dp-xhdpi", "forced_permission_needed_tight_az")
 
+    @Test
+    fun theShortCompactAndroid17PermissionStateInEnglish() = capture("en-w411dp-h659dp-xhdpi", "forced_permission_needed_tight_android17_en", android17PermissionStep = true)
+
+    @Test
+    fun theShortCompactAndroid17PermissionStateInAzerbaijani() = capture("az-w411dp-h659dp-xhdpi", "forced_permission_needed_tight_android17_az", android17PermissionStep = true)
+
     private fun capture(
         qualifiers: String,
         name: String,
+        android17PermissionStep: Boolean = false,
     ) {
         RuntimeEnvironment.setQualifiers(qualifiers)
         ActivityScenario.launch(ComponentActivity::class.java).use { scenario ->
-            scenario.onActivity { activity -> activity.setContent { Stage() } }
+            scenario.onActivity { activity -> activity.setContent { Stage(android17PermissionStep) } }
             rule.waitForIdle()
             // A fresh frame for the pixel copy: without it the copy sometimes reads an empty window.
             rule.runOnUiThread { checkNotNull(rootView).invalidate() }
@@ -58,7 +66,7 @@ class ForcedPermissionTightScreenshotTest {
     }
 
     @Composable
-    private fun Stage() {
+    private fun Stage(android17PermissionStep: Boolean) {
         rootView = LocalView.current
         ForcedTheme {
             ForcedUpdateScreen(
@@ -68,6 +76,7 @@ class ForcedPermissionTightScreenshotTest {
                 isOnline = true,
                 forcedDownloadNetwork = Network.UnmeteredOnly,
                 legacyPermissionStep = false,
+                android17PermissionStep = android17PermissionStep,
                 onUpdateNow = {},
                 onTryAgain = {},
                 onOpenSettings = {},

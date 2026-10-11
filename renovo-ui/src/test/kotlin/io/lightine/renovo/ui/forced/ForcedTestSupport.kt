@@ -50,7 +50,8 @@ internal fun ComposeContentTestRule.setForcedContent(
     isOnline: Boolean = true,
     legacyPermissionStep: Boolean = false,
     forcedDownloadNetwork: Network = Network.UnmeteredOnly,
-) = setForcedContentOf(calls, { step }, info, isOnline, legacyPermissionStep, forcedDownloadNetwork)
+    android17PermissionStep: Boolean = false,
+) = setForcedContentOf(calls, { step }, info, isOnline, legacyPermissionStep, forcedDownloadNetwork, android17PermissionStep)
 
 /**
  * Like [setForcedContent], but the step is read on every composition, so a test can change it from
@@ -63,6 +64,7 @@ internal fun ComposeContentTestRule.setForcedContentOf(
     isOnline: Boolean = true,
     legacyPermissionStep: Boolean = false,
     forcedDownloadNetwork: Network = Network.UnmeteredOnly,
+    android17PermissionStep: Boolean = false,
 ) {
     setContent {
         ForcedTheme {
@@ -73,6 +75,7 @@ internal fun ComposeContentTestRule.setForcedContentOf(
                 isOnline = isOnline,
                 forcedDownloadNetwork = forcedDownloadNetwork,
                 legacyPermissionStep = legacyPermissionStep,
+                android17PermissionStep = android17PermissionStep,
                 onUpdateNow = { calls.updateNow++ },
                 onTryAgain = { calls.tryAgain++ },
                 onOpenSettings = { calls.openSettings++ },

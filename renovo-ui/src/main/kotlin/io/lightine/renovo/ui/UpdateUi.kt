@@ -2,7 +2,6 @@ package io.lightine.renovo.ui
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.text.format.Formatter
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -87,6 +86,8 @@ internal class UpdateUiActions(
  * @param forcedDownloadNetwork The host app's `forcedDownloadNetwork`, for the waiting note of the forced screen.
  * @param installedVersionName The version name of the installed app, for the forced screen. Null asks the system.
  * @param legacyPermissionStep True on Android 7.0 and 7.1, where the permission setting is device-wide.
+ * @param android17PermissionStep True on Android 17 and later, where the permission setting is the
+ *   "Always allow" choice instead of a switch. Never true together with [legacyPermissionStep].
  * @param dismissed The choices that last until the next app start.
  */
 @Composable
@@ -98,7 +99,8 @@ internal fun UpdateUi(
     isOnline: Boolean? = null,
     forcedDownloadNetwork: Network = Network.UnmeteredOnly,
     installedVersionName: String? = null,
-    legacyPermissionStep: Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.O,
+    legacyPermissionStep: Boolean = permissionScreenFor() == PermissionScreen.UnknownSources,
+    android17PermissionStep: Boolean = permissionScreenFor() == PermissionScreen.AlwaysAllow,
     dismissed: DismissedUpdates = DismissedUpdates.process,
 ) {
     // "Hide" lasts for the whole download. A download can wait for a network halfway and then go
@@ -125,12 +127,28 @@ internal fun UpdateUi(
 
         is UpdateState.ReadyToInstall -> ReadyToInstallUi(state.info, canInstallNow, active, actions, dismissed)
 
-        is UpdateState.PermissionNeeded -> PermissionUi(state.info, legacyPermissionStep, active, actions, dismissed)
+        is UpdateState.PermissionNeeded -> PermissionUi(
+            info = state.info,
+            legacyPermissionStep = legacyPermissionStep,
+            android17PermissionStep = android17PermissionStep,
+            active = active,
+            actions = actions,
+            dismissed = dismissed,
+        )
 
         is UpdateState.Failed -> FailedUi(state.reason, state.info, state.userInitiated, active, actions, dismissed)
 
         is UpdateState.Required -> if (active) {
-            RequiredUi(state.info, state.step, isOnline, forcedDownloadNetwork, installedVersionName, legacyPermissionStep, actions)
+            RequiredUi(
+                info = state.info,
+                step = state.step,
+                isOnline = isOnline,
+                forcedDownloadNetwork = forcedDownloadNetwork,
+                installedVersionName = installedVersionName,
+                legacyPermissionStep = legacyPermissionStep,
+                android17PermissionStep = android17PermissionStep,
+                actions = actions,
+            )
         }
 
         // The optional flow shows nothing in these. A forced update never leaves Required while it
@@ -217,6 +235,7 @@ private fun ReadyToInstallUi(
 private fun PermissionUi(
     info: UpdateInfo,
     legacyPermissionStep: Boolean,
+    android17PermissionStep: Boolean,
     active: Boolean,
     actions: UpdateUiActions,
     dismissed: DismissedUpdates,
@@ -226,6 +245,7 @@ private fun PermissionUi(
     if (!active || cancelled || dismissed.isDismissed(Dismissal.PermissionCancelled, code)) return
     PermissionDialog(
         legacyStepText = legacyPermissionStep,
+        android17Step = android17PermissionStep,
         dismissible = true,
         onCancel = {
             cancelled = true
@@ -269,6 +289,7 @@ private fun RequiredUi(
     forcedDownloadNetwork: Network,
     installedVersionName: String?,
     legacyPermissionStep: Boolean,
+    android17PermissionStep: Boolean,
     actions: UpdateUiActions,
 ) {
     // Its own window, so neither the keyboard focus nor a screen reader can reach the host app underneath.
@@ -280,6 +301,7 @@ private fun RequiredUi(
             isOnline = isOnline ?: rememberIsOnline(),
             forcedDownloadNetwork = forcedDownloadNetwork,
             legacyPermissionStep = legacyPermissionStep,
+            android17PermissionStep = android17PermissionStep,
             onUpdateNow = actions.startDownload,
             onTryAgain = actions.startDownload,
             onOpenSettings = actions.installIfReady,

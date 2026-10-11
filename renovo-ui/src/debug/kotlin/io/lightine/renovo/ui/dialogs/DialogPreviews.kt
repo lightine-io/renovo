@@ -125,7 +125,7 @@ internal fun ReadyToInstallDialogPreview() {
 @Composable
 internal fun PermissionDialogPreview() {
     DialogPreviewStage {
-        PermissionDialog(legacyStepText = false, dismissible = true, onCancel = {}, onOpenSettings = {})
+        PermissionDialog(legacyStepText = false, android17Step = false, dismissible = true, onCancel = {}, onOpenSettings = {})
     }
 }
 
@@ -133,7 +133,7 @@ internal fun PermissionDialogPreview() {
 @Composable
 internal fun PermissionDialogWithoutCancelPreview() {
     DialogPreviewStage {
-        PermissionDialog(legacyStepText = false, dismissible = false, onCancel = {}, onOpenSettings = {})
+        PermissionDialog(legacyStepText = false, android17Step = false, dismissible = false, onCancel = {}, onOpenSettings = {})
     }
 }
 
@@ -141,7 +141,15 @@ internal fun PermissionDialogWithoutCancelPreview() {
 @Composable
 internal fun PermissionDialogLegacyStepPreview() {
     DialogPreviewStage {
-        PermissionDialog(legacyStepText = true, dismissible = true, onCancel = {}, onOpenSettings = {})
+        PermissionDialog(legacyStepText = true, android17Step = false, dismissible = true, onCancel = {}, onOpenSettings = {})
+    }
+}
+
+@DialogVariants
+@Composable
+internal fun PermissionDialogAndroid17StepPreview() {
+    DialogPreviewStage {
+        PermissionDialog(legacyStepText = false, android17Step = true, dismissible = true, onCancel = {}, onOpenSettings = {})
     }
 }
 

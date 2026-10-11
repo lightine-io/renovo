@@ -125,6 +125,11 @@ class StringsTest {
                     emptyList<String>(),
                     "Naməlum mənbələrdən quraşdırmanı aktiv edin",
                 ),
+                Triple(
+                    R.string.renovo_ui_permission_step_2_android17,
+                    emptyList<String>(),
+                    "\"Həmişə icazə verin\" seçin",
+                ),
                 Triple(R.string.renovo_ui_cancel, emptyList<String>(), "Ləğv et"),
                 Triple(R.string.renovo_ui_update_now, emptyList<String>(), "İndi yenilə"),
                 Triple(
