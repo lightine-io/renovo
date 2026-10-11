@@ -10,6 +10,32 @@ kotlin {
     }
 }
 
+// The same source builds version 1 and version 2 of the sample, so the update from 1 to 2 can be
+// tested with real APKs: ./gradlew :sample:assembleDebug -PsampleVersionCode=2
+val sampleVersionCode: Int =
+    providers
+        .gradleProperty("sampleVersionCode")
+        .map { it.toIntOrNull() ?: error("-PsampleVersionCode must be a whole number, got \"$it\".") }
+        .getOrElse(1)
+
+// 1 -> "1.0", 2 -> "2.0", 7 -> "7.0": the name always shows which code was built.
+val sampleVersionName = "$sampleVersionCode.0"
+
+// 10.0.2.2 is how an Android emulator reaches the machine it runs on.
+val sampleVersionUrl: String =
+    providers.gradleProperty("sampleVersionUrl").getOrElse("https://10.0.2.2:8443/version.json")
+
+// Name of a Renovo Network value. Passing it as text keeps BuildConfig free of library types.
+val sampleTrustTestServer: Boolean =
+    providers.gradleProperty("sampleTrustTestServer").map { it.toBoolean() }.getOrElse(false)
+
+val sampleForcedNetwork: String =
+    providers.gradleProperty("sampleForcedNetwork").getOrElse("UnmeteredOnly").also {
+        require(it in setOf("Any", "UnmeteredOnly", "NotRoaming")) {
+            "-PsampleForcedNetwork must be Any, UnmeteredOnly, or NotRoaming, got \"$it\"."
+        }
+    }
+
 android {
     namespace = "io.lightine.renovo.sample"
     compileSdk = 37
@@ -25,8 +51,42 @@ android {
         applicationId = "io.lightine.renovo.sample"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = sampleVersionCode
+        versionName = sampleVersionName
+
+        buildConfigField("String", "VERSION_URL", "\"$sampleVersionUrl\"")
+        buildConfigField("String", "FORCED_NETWORK", "\"$sampleForcedNetwork\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
+        compose = true
+    }
+
+    buildTypes {
+        release {
+            // Code shrinking is on so the acceptance test AC-15 can show that Renovo's consumer
+            // rules keep everything the system creates by name (workers, receivers).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+
+            // Signing with the debug key is only for the sample's emulator tests: version 1 and
+            // version 2 must carry the same certificate, or the install of the update is rejected.
+            // A real app signs its release build with its own key, kept outside the repository.
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    // Opt-in for AC-15: the shrunk release build must reach the self-signed test server. Instead
+    // of a second copy of the config, the release source set borrows the debug manifest and
+    // resources (the network security config and the certificate). Without the property the
+    // release source set stays empty, so the release manifest has no network security config.
+    if (sampleTrustTestServer) {
+        sourceSets.getByName("release") {
+            manifest.srcFile("src/debug/AndroidManifest.xml")
+            res.directories.add("src/debug/res")
+        }
     }
 
     lint {
@@ -35,8 +95,36 @@ android {
     }
 }
 
+// The debug build (and the release build, with -PsampleTrustTestServer=true) trusts the test server
+// through res/raw/test_server.pem, which is created on each machine by the test server and never
+// committed. Failing early here is clearer than the resource
+// error the build would give later.
+val testServerCertificate = layout.projectDirectory.file("src/debug/res/raw/test_server.pem")
+val checkTestServerCertificate =
+    tasks.register("checkTestServerCertificate") {
+        val certificate = testServerCertificate.asFile
+        doLast {
+            if (!certificate.isFile) {
+                throw GradleException(
+                    "The debug build (and the release build with -PsampleTrustTestServer=true) needs the " +
+                        "test server's certificate at ${certificate.path}.\n" +
+                        "Start the test server once (see sample/README.md), then copy server.pem from its " +
+                        "cert folder (<served folder>/.cert/server.pem by default) to that path.",
+                )
+            }
+        }
+    }
+tasks
+    .matching { it.name == "preDebugBuild" || (sampleTrustTestServer && it.name == "preReleaseBuild") }
+    .configureEach { dependsOn(checkTestServerCertificate) }
+
 dependencies {
     implementation(project(":renovo-ui"))
     // AppCompatActivity is one of the host-app activity types the update UI must support.
     implementation(libs.androidx.appcompat)
+
+    // renovo-ui exposes only runtime, material3, and activity-compose to its users.
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 }
