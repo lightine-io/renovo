@@ -21,3 +21,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The runtime behind `Renovo.init`: one event loop feeds the engine and runs its effects through the real components, restores the state from the store on start, and keeps every component failure away from the host app.
 - The five dialogs of the optional update flow: update available, downloading, ready to install, first-time permission, and update not installed, with keyboard handling, previews, and screenshots.
 - Review fixes in renovo-core: a deferred install confirmation now opens when the user returns and asks `canInstallNow` again, a mistimed permission tap no longer marks the device unsupported, a wrong `size` in the version file no longer breaks resume, and an empty APK is reported as a failed file check.
+- The forced update screen with its seven states and the one-column and two-column layouts, with previews and screenshots.

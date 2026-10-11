@@ -46,6 +46,7 @@
     <string name="renovo_ui_forced_installing_label">Installing update</string>
     <string name="renovo_ui_forced_waiting_note">Waiting for Wi-Fi. The update starts when the device connects to Wi-Fi.</string>
     <string name="renovo_ui_forced_mobile_data_button">Download with mobile data (%1$s)</string>
+    <string name="renovo_ui_forced_mobile_data_button_no_size">Download with mobile data</string>
 
     <!-- 2.6 Update not installed -->
     <string name="renovo_ui_failed_headline">Update not installed</string>

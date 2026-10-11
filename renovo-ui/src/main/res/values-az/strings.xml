@@ -46,6 +46,7 @@
     <string name="renovo_ui_forced_installing_label">Yeniləmə quraşdırılır</string>
     <string name="renovo_ui_forced_waiting_note">Wi-Fi gözlənilir. Cihaz Wi-Fi şəbəkəsinə qoşulanda yeniləmə başlayacaq.</string>
     <string name="renovo_ui_forced_mobile_data_button">Mobil internetlə yüklə (%1$s)</string>
+    <string name="renovo_ui_forced_mobile_data_button_no_size">Mobil internetlə yüklə</string>
 
     <!-- 2.6 Update not installed -->
     <string name="renovo_ui_failed_headline">Yeniləmə quraşdırılmadı</string>
