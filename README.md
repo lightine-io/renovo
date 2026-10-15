@@ -19,7 +19,7 @@ In this guide, the **host app** is your app, the one that uses Renovo.
 
 Renovo makes only two kinds of request: one for the version file and one for the APK. It sends no analytics.
 
-Building with React Native, Expo, or Flutter? Renovo works in the Android part of your app. The wiki has a page for each, React Native and Flutter. For Kotlin Multiplatform and other tools, see the wiki page Other stacks.
+Building with another stack? More in the wiki: Other stacks.
 
 ## Choose your path
 
