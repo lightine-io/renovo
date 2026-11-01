@@ -3,7 +3,7 @@
 # compatibility page lists lower maximum versions than these. The build passes with them, and
 # that is what counts.
 kotlin = "2.4.21"
-agp = "9.4.1"
+agp = "9.5.0"
 spotless = "8.10.4"
 ktlint = "1.8.0"
 dokka = "2.2.0"
