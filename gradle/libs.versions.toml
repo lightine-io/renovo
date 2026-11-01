@@ -32,7 +32,7 @@ robolectric = "4.17"
 androidx-test-core = "1.7.0"
 androidx-test-espresso = "3.7.0"
 # Screenshot tests of renovo-ui. The plugin has to match the AGP version.
-roborazzi = "1.76.0"
+roborazzi = "1.77.0"
 
 [libraries]
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "androidx-work" }
